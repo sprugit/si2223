@@ -1,4 +1,4 @@
-package ex1;
+package ex34;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -7,8 +7,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.security.Certificate;
 import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
@@ -18,38 +27,12 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import ex34.SymKeyHandler.*;
+
 public class Cifra {
 	
-	private static final String input = "files/ex1/cifrados/";
-	private static final String output = "files/ex1/decifrados/";
-	
-	private static void writeKey(String filename, byte[] key) {
-		try(FileOutputStream fos = new FileOutputStream(new File(input+filename+".key"))){
-			fos.write(key);
-			fos.flush();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	private static byte[] readKey(String filename) {
-		File keyfile = new File(input+filename+".key");
-		byte[] retval = new byte[0];
-		try(FileInputStream fis = new FileInputStream(keyfile)){
-			retval =  fis.readNBytes((int) keyfile.length());
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return retval;
-	}
+	private static final String input = "files/ex34/cifrados/";
+	private static final String output = "files/ex34/decifrados/";
 	
 	private static byte[] writeCipher(FileInputStream fis, FileOutputStream fos) throws NoSuchAlgorithmException, IOException, NoSuchPaddingException, InvalidKeyException {
 		KeyGenerator kg = KeyGenerator.getInstance("AES");
@@ -80,7 +63,7 @@ public class Cifra {
 		try(FileInputStream fis = new FileInputStream(filename);
 			FileOutputStream fos = new FileOutputStream(input+filename+".cif");){
 			byte[] key = writeCipher(fis, fos); //ciphers file and returns key
-			writeKey(filename, key);
+			SymKeyHandler.writeKey(input+filename, key);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -107,7 +90,7 @@ public class Cifra {
 			System.exit(1);
 		}
 		String truename = filename.substring(0, filename.lastIndexOf("."));
-		byte[] keyb = readKey(truename	);
+		byte[] keyb = SymKeyHandler.readKey(input+truename);
 		SecretKeySpec key = new SecretKeySpec(keyb, "AES");
 		
 		Cipher c = Cipher.getInstance("AES");
