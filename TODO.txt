@@ -1,0 +1,11 @@
+Implementado:
+flag -c
+flag -g parcialmente (faz download dos ficheiros cifrados com o -c)
+
+por Implementar
+flag -e
+flag -s (Algoritmo que gera e verifica a assinatura implementado mas pode n ser o que a prof quer)
+flag -g (Download das assinaturas e respetiva verificação. Download dos envelopes.)
+
+Nota:
+Para comunicações entre o server e o cliente usar funções definidas na classe CommsHandler

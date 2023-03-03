@@ -111,7 +111,6 @@ public class ServerOperations {
 	public void receiveKey(String filename, ObjectInputStream ois) throws Exception {
 		try(FileOutputStream fos = new FileOutputStream(kdir+filename+".chave_secreta")){
 			byte[] keyc = CommsHandler.receiveByte(ois);
-			System.out.println(new String(Base64.getEncoder().encode(keyc)));
 			fos.write(keyc);
 			fos.flush();
 		}
@@ -120,7 +119,6 @@ public class ServerOperations {
 	public void sendKey(String filename, ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(kdir+filename+".chave_secreta")){
 			byte[] keyc = fis.readAllBytes();
-			System.out.println(new String(Base64.getEncoder().encode(keyc)));
 			CommsHandler.sendFullByteArray(keyc, oos);
 		}
 	}

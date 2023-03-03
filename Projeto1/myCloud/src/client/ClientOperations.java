@@ -93,15 +93,7 @@ public class ClientOperations {
 		
 		byte[] keyc = new byte[256]; 
 		keyc = c.doFinal(keyb);
-		System.out.println(new String(Base64.getEncoder().encode(keyc)));
 		CommsHandler.sendFullByteArray(keyc, oos);
-//		
-//		try(ByteArrayInputStream bais = new ByteArrayInputStream(keyb);
-//			CipherInputStream cis = new CipherInputStream(bais, c)){
-//			cis.read(keyc, 0 , keyb.length);
-//			cis.close();
-//			CommsHandler.sendFullByteArray(keyc, oos);
-//		}
 	}
 	
 	public byte[] receiveKey(ObjectInputStream ois) throws Exception {
@@ -110,7 +102,6 @@ public class ClientOperations {
 		c.init(Cipher.DECRYPT_MODE, keystore.getPrivateKey()); //TODO: 
 		
 		byte[] ckey = CommsHandler.receiveByte(ois);
-		System.out.println(new String(Base64.getEncoder().encode(ckey)));
 		
 		return c.doFinal(ckey);
 	}
