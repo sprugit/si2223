@@ -100,9 +100,10 @@ public class myCloudServer extends WarnHandler {
 								log("Receiving "+filename+" from user.");
 								
 								svop.receiveCipher(filename, inStream);
-								outStream.writeObject((Boolean) true);
+								log("Received file "+filename+" sucessfully from user.");
 								svop.receiveKey(filename, inStream);
-								outStream.writeObject((Boolean) true);
+								log("Received key for file "+filename+" sucessfully from user.");
+								
 								
 							} else {
 								log(filename+": already exists! Skipping...");
@@ -136,11 +137,12 @@ public class myCloudServer extends WarnHandler {
 							if(fileExists) {
 								log("Sending "+filename+" to user.");
 								
+								log("Sending key for file "+filename+" to user.");
 								svop.sendKey(filename, outStream);
-								o = inStream.readObject();
+								log("Key sent successfully!");
+								log("Sending ciphered file "+filename+" to user.");
 								svop.sendCipher(filename, outStream);
-								o = inStream.readObject();
-								log(filename+": File was sent successfully");
+								log(filename+": File "+filename+" was sent successfully");
 								
 							} else {
 								log(filename+": already exists! Skipping...");

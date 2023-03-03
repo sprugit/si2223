@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import shared.WarnHandler;
@@ -20,7 +19,7 @@ public class myCloud extends WarnHandler {
 		ClientOperations clop = ClientOperations.getInstance();
 
 		String valid = "-c-s-e-g";
-		String received = String.join(" ", args);
+		//String received = String.join(" ", args);
 		String remote = null;
 		int op = 0;
 
@@ -65,7 +64,7 @@ public class myCloud extends WarnHandler {
 				ObjectInputStream inStream = new ObjectInputStream(soc.getInputStream());) {
 			log("Connected to remote host successfully.");
 
-			Object o;
+			//Object o;
 
 			boolean check;
 
@@ -86,10 +85,8 @@ public class myCloud extends WarnHandler {
 
 					if (check) {
 
-						byte[] key = clop.cipherFile(filename, outStream);
-						check = (boolean) inStream.readObject();
-						clop.voidSendKey(key, outStream);
-						check = (boolean) inStream.readObject();
+						byte[] key = clop.sendFile(filename, inStream, outStream);
+						clop.sendKey(key, outStream);
 						log("File :" + filename + " uploaded successfully.");
 
 					} else {
@@ -115,9 +112,7 @@ public class myCloud extends WarnHandler {
 					if (check) {
 
 						byte[] key = clop.receiveKey(inStream);
-						outStream.writeObject((Boolean) true);
-						clop.decipherFile(filename, inStream, key);
-						outStream.writeObject((Boolean) true);
+						clop.receiveFile(filename, inStream, key);
 						log("File :" + filename + " downloaded successfully.");
 
 					} else {
@@ -135,7 +130,7 @@ public class myCloud extends WarnHandler {
 		} catch (ClassNotFoundException e) {
 			exit("Unexpected Class received.");
 		} catch (Exception e) {
-			// e.printStackTrace();
+			e.printStackTrace();
 			exit(e.getMessage());
 		}
 	}

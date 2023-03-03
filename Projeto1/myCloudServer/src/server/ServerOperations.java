@@ -2,16 +2,15 @@ package server;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.Base64;
 
-import shared.StreamHandler;
+import shared.CommsHandler;
 import shared.WarnHandler;
 
 public class ServerOperations {
@@ -44,21 +43,21 @@ public class ServerOperations {
 		File keys = new File(kdir);
 		File envs = new File(edir);
 		for(File f : files.listFiles()) {
-			String name = f.getName().substring(0, f.getName().lastIndexOf(".")-1);
+			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
 			if(!Files.exists(Path.of(kdir+name+".chave_secreta"))) {
 				WarnHandler.error(name+": file doesn't have respective secret key file. Deleting...");
 				f.delete();
 			}
 		}
 		for(File f : envs.listFiles()) {
-			String name = f.getName().substring(0, f.getName().lastIndexOf(".")-1);
+			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
 			if(!Files.exists(Path.of(kdir+name+".chave_secreta"))) {
 				WarnHandler.error(name+": file doesn't have respective secret key file. Deleting...");
 				f.delete();
 			}
 		}
 		for(File f : keys.listFiles()) {
-			String name = f.getName().substring(0, f.getName().lastIndexOf(".")-1);
+			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
 			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")); 
 			boolean ee = !Files.exists(Path.of(edir+name+".envelope"));
 			if(ef && ee) {
@@ -99,37 +98,42 @@ public class ServerOperations {
 
 	public void receiveCipher(String filename, ObjectInputStream ois) throws Exception {
 		try(FileOutputStream fos = new FileOutputStream(fdir+filename+".cifrado")){
-			StreamHandler.transferStream(ois, fos);
+			CommsHandler.ReceiveAll(ois, fos);
 		}
 	}
 	
 	public void sendCipher(String filename, ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(fdir+filename+".cifrado")){
-			StreamHandler.transferStream(fis, oos);
+			CommsHandler.sendAll(fis, oos);
 		}
 	}
 
 	public void receiveKey(String filename, ObjectInputStream ois) throws Exception {
 		try(FileOutputStream fos = new FileOutputStream(kdir+filename+".chave_secreta")){
-			StreamHandler.transferStream(ois, fos);
+			byte[] keyc = CommsHandler.receiveByte(ois);
+			System.out.println(new String(Base64.getEncoder().encode(keyc)));
+			fos.write(keyc);
+			fos.flush();
 		}
 	}
 	
 	public void sendKey(String filename, ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(kdir+filename+".chave_secreta")){
-			StreamHandler.transferStream(fis, oos);
+			byte[] keyc = fis.readAllBytes();
+			System.out.println(new String(Base64.getEncoder().encode(keyc)));
+			CommsHandler.sendFullByteArray(keyc, oos);
 		}
 	}
 
 	public void receiveSignature(String filename, ObjectInputStream ois) throws Exception {
 		try(FileOutputStream fos = new FileOutputStream(sdir+filename+".assinado")){
-			StreamHandler.transferStream(ois, fos);
+			//StreamHandler.transferStream(ois, fos);
 		}
 	}
 	
 	public void sendSignature(String filename, ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(sdir+filename+".assinado")){
-			StreamHandler.transferStream(fis, oos);
+			//StreamHandler.transferStream(fis, oos);
 		}
 	}
 
