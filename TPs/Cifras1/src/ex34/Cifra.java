@@ -43,7 +43,7 @@ public class Cifra {
 		c.init(Cipher.ENCRYPT_MODE, key);
 		
 		try(CipherOutputStream cos = new CipherOutputStream(fos, c);){
-			byte[] b = new byte[16];
+			byte[] b = new byte[1024];
 			int i = fis.read(b);
 			while (i != -1) {
 				cos.write(b, 0, i);
@@ -101,7 +101,7 @@ public class Cifra {
 			CipherInputStream cis = new CipherInputStream(fin, c);
 			FileOutputStream fout = new FileOutputStream(new File(output+truename))){
 			
-			byte[] b = new byte[16];
+			byte[] b = new byte[1024];
 			int i = cis.read(b);
 			while (i != -1) {
 				fout.write(b, 0, i);
