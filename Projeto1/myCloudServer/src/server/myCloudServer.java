@@ -116,6 +116,28 @@ public class myCloudServer extends WarnHandler {
 					break;
 				case "-s":
 					log("User is attempting to sign files.");
+					while(isReceiving) {
+						o = inStream.readObject();
+						if(o instanceof String) {
+							String filename = (String) o;
+							fileExists = !svop.existsSignature(filename);
+							outStream.writeObject((Boolean) fileExists);
+							
+							if(fileExists) {
+								log("Receiving signature and file "+filename+" from user.");
+								svop.receiveSignature(filename, inStream);
+								log("Received signature and file of "+filename+" sucessfully from user.");
+								
+								
+							} else {
+								log(filename+": already exists! Skipping...");
+							}
+							
+							
+						}else if(o instanceof Boolean){
+							isReceiving = false;
+						}	
+					}
 					
 					break;
 				case "-e":

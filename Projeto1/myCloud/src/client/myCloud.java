@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import shared.WarnHandler;
@@ -97,7 +100,28 @@ public class myCloud extends WarnHandler {
 				outStream.writeObject((boolean) false);
 				break;
 			case "-s":
+				for (String filename : files) {
+					
+					// Se não existe localmente dar log e passar para a proxima iteração
+					if (!Files.exists(Path.of(filename),LinkOption.NOFOLLOW_LINKS)) {
+						log(filename + " not found");
+						continue;
+					}
+					
+					outStream.writeObject((String) filename);
+					check = (boolean) inStream.readObject();
+					
+					if (check) {
+						
+						clop.sendSignature(filename, outStream);
+						log(filename + " and signature updated sucessfully.");
 
+					} else {
+						log("File already exists on the server. Skipping...");
+					}
+				}
+				// Informa o servidor que vamos parar de enviar ficheiros
+				outStream.writeObject((boolean) false);
 				break;
 			case "-e":
 

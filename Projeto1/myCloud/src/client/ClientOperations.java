@@ -108,24 +108,36 @@ public class ClientOperations {
 	
 	public void sendSignature(String filename, ObjectOutputStream oos) throws Exception {
 		
-		try(FileInputStream fis = new FileInputStream(filename);){
+		try (FileInputStream fis = new FileInputStream(filename)) {
 			//Signature s = Signature.getInstance("NONEwithRSA");
-			Signature s = Signature.getInstance("SHA256withRSA");
-			
-			// Assinatura usa chave privada para assinar
-			s.initSign(keystore.getPrivateKey());
+	        Signature s = Signature.getInstance("SHA256withRSA");
+	        
+	        // Assinatura usa chave privada para assinar
+	        s.initSign(keystore.getPrivateKey());
 
-			long read = 0;
-			byte[] buffer = new byte[1024];
-			while (read >= 0) {
-				read = fis.read(buffer, 0, buffer.length);
-				if (read > -1) {
-					s.update(buffer, 0, (int) read);
-				}
-			}
-			oos.write(s.sign());
-			oos.flush();
-		}
+	        // Read the file and update the signature
+	        s.initSign(keystore.getPrivateKey());
+
+	        byte[] buffer = new byte[1024];
+	        int bytesRead;
+	        while ((bytesRead = fis.read(buffer)) != -1) {
+	            s.update(buffer, 0, bytesRead);
+	        }
+
+	        byte[] signature = s.sign();
+
+	        // Send the signature
+	        oos.writeObject(signature);
+	        oos.flush();
+
+	        // Send the file
+	        fis.close();
+	        FileInputStream fis2 = new FileInputStream(filename);
+	        while ((bytesRead = fis2.read(buffer)) != -1) {
+	            oos.write(buffer, 0, bytesRead);
+	        }
+	        oos.flush();
+	    }
 	}
 	
 	public boolean verifySignature(String filename, ObjectInputStream ois) throws Exception {

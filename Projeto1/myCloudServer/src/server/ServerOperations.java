@@ -93,7 +93,9 @@ public class ServerOperations {
 	}
 	
 	public boolean existsSignature(String filename) {
-		return Files.exists(Path.of(sdir+filename+".assinado"),LinkOption.NOFOLLOW_LINKS);
+		boolean ef = Files.exists(Path.of(fdir+filename+".assinado"),LinkOption.NOFOLLOW_LINKS);
+		boolean es = Files.exists(Path.of(sdir+filename+".assinatura"),LinkOption.NOFOLLOW_LINKS);
+		return ef && es;
 	}
 
 	public void receiveCipher(String filename, ObjectInputStream ois) throws Exception {
@@ -124,10 +126,24 @@ public class ServerOperations {
 	}
 
 	public void receiveSignature(String filename, ObjectInputStream ois) throws Exception {
-		try(FileOutputStream fos = new FileOutputStream(sdir+filename+".assinado")){
-			//StreamHandler.transferStream(ois, fos);
-		}
+		//tentei usar as funcoes do commsHandler mas estava a dar erro
+		
+		//receber assinatura
+	    byte[] signature = (byte[]) ois.readObject();
+	    try (FileOutputStream fos = new FileOutputStream(sdir + filename + ".assinatura")) {
+	        fos.write(signature);
+	    }
+	  //receber ficheiro
+	    try (FileOutputStream fos = new FileOutputStream(fdir + filename + ".assinado")) {
+	        byte[] buffer = new byte[1024];
+	        int bytesRead;
+	        while ((bytesRead = ois.read(buffer)) != -1) {
+	            fos.write(buffer, 0, bytesRead);
+	        }
+	    }
 	}
+	
+	
 	
 	public void sendSignature(String filename, ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(sdir+filename+".assinado")){
