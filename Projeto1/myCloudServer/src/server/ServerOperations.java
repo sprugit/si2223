@@ -126,21 +126,16 @@ public class ServerOperations {
 	}
 
 	public void receiveSignature(String filename, ObjectInputStream ois) throws Exception {
-		//tentei usar as funcoes do commsHandler mas estava a dar erro
+
+		try(FileOutputStream signedfile = new FileOutputStream(fdir + filename + ".assinado")){
+			CommsHandler.ReceiveAll(ois, signedfile);
+		}
 		
-		//receber assinatura
-	    byte[] signature = (byte[]) ois.readObject();
-	    try (FileOutputStream fos = new FileOutputStream(sdir + filename + ".assinatura")) {
-	        fos.write(signature);
-	    }
-	  //receber ficheiro
-	    try (FileOutputStream fos = new FileOutputStream(fdir + filename + ".assinado")) {
-	        byte[] buffer = new byte[1024];
-	        int bytesRead;
-	        while ((bytesRead = ois.read(buffer)) != -1) {
-	            fos.write(buffer, 0, bytesRead);
-	        }
-	    }
+		try(FileOutputStream signature = new FileOutputStream(sdir + filename + ".assinatura")){
+			signature.write(CommsHandler.receiveByte(ois));
+			signature.flush();
+		}
+		
 	}
 	
 	

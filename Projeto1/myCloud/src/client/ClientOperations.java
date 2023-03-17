@@ -122,21 +122,13 @@ public class ClientOperations {
 	        int bytesRead;
 	        while ((bytesRead = fis.read(buffer)) != -1) {
 	            s.update(buffer, 0, bytesRead);
+	            CommsHandler.sendNBytes(buffer, bytesRead, oos);
 	        }
-
+	        CommsHandler.sendFullByteArray(new byte[0], oos);
+	        //sends empty byte array to signal EOF
+	        
 	        byte[] signature = s.sign();
-
-	        // Send the signature
-	        oos.writeObject(signature);
-	        oos.flush();
-
-	        // Send the file
-	        fis.close();
-	        FileInputStream fis2 = new FileInputStream(filename);
-	        while ((bytesRead = fis2.read(buffer)) != -1) {
-	            oos.write(buffer, 0, bytesRead);
-	        }
-	        oos.flush();
+	        CommsHandler.sendFullByteArray(signature, oos);
 	    }
 	}
 	
