@@ -65,7 +65,7 @@ public class ClientOperations {
 		
 		Cipher c = Cipher.getInstance("AES");
 		c.init(Cipher.ENCRYPT_MODE, key);
-		
+
 		try(FileInputStream fis = new FileInputStream(filename);
 			CipherInputStream cis = new CipherInputStream(fis, c)){
 			CommsHandler.sendAll(cis, out);
@@ -115,9 +115,6 @@ public class ClientOperations {
 	        // Assinatura usa chave privada para assinar
 	        s.initSign(keystore.getPrivateKey());
 
-	        // Read the file and update the signature
-	        s.initSign(keystore.getPrivateKey());
-
 	        byte[] buffer = new byte[1024];
 	        int bytesRead;
 	        while ((bytesRead = fis.read(buffer)) != -1) {
@@ -154,4 +151,10 @@ public class ClientOperations {
 			return s.verify(signature);
 		}
 	}	
+	
+	public void sendEnvelope(String filename, ObjectInputStream ois) throws Exception {
+		
+		
+		
+	}
 }
