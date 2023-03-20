@@ -138,8 +138,6 @@ public class ServerOperations {
 		
 	}
 	
-	
-	
 	public void sendSignature(String filename, ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(sdir+filename+".assinado")){
 			//StreamHandler.transferStream(fis, oos);
@@ -147,8 +145,13 @@ public class ServerOperations {
 	}
 
 	//TODO to be implemented
-	public void receiveEnvelope(String filename, ObjectInputStream ois) {
-
+	public void receiveEnvelope(String filename, ObjectInputStream ois) throws Exception {
+		try(FileOutputStream fos = new FileOutputStream(fdir + filename + ".envelope");){
+			fos.write(CommsHandler.receiveByte(ois)); //receive key
+			CommsHandler.ReceiveAll(ois, fos); //receive file contents
+			fos.write(CommsHandler.receiveByte(ois)); //receive signature
+		}
+		
 	}
 
 	//TODO to be implemented (genérico que verifica se um ficheiro existe no formato .seguro ou no formato .cifrado e manda)

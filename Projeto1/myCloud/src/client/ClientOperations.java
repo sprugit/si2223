@@ -1,12 +1,12 @@
 package client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.Signature;
-import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -152,9 +152,86 @@ public class ClientOperations {
 		}
 	}	
 	
-	public void sendEnvelope(String filename, ObjectInputStream ois) throws Exception {
+	public void sendEnvelope(String filename, ObjectOutputStream oos) throws Exception {
 		
+		KeyGenerator kg = KeyGenerator.getInstance("AES");
+		kg.init(128);
+		SecretKey key = kg.generateKey();
 		
+		Cipher c = Cipher.getInstance("AES");
+		c.init(Cipher.ENCRYPT_MODE, key);
+		
+		try(FileInputStream fis = new FileInputStream(filename);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();) {
+			
+			Signature s = Signature.getInstance("SHA256withRSA");
+			s.initSign(keystore.getPrivateKey());
+			
+			sendKey(key.getEncoded(), oos);
+			WarnHandler.log("Key successfully sent to server.");
+			
+			byte[] buf = new byte[512];
+			long read;
+			try(CipherOutputStream cos = new CipherOutputStream(baos, c);) {
+				do {
+					read = fis.read(buf, 0, buf.length);
+					s.update(buf, 0, (int) read);
+					cos.write(buf, 0, (int) read);
+					baos.flush();
+					CommsHandler.sendFullByteArray(baos.toByteArray(), oos);
+					baos.reset();
+				}while(read == buf.length && read % 16 == 0);
+			}
+			CommsHandler.sendFullByteArray(baos.toByteArray(), oos);
+			CommsHandler.sendFullByteArray(new byte[0], oos); //inform server file contents were fully sent
+			
+			byte[] sig = s.sign();
+			CommsHandler.sendFullByteArray(sig, oos);
+			WarnHandler.log("Signature generated and sent to server.");
+			
+			WarnHandler.log("Envelope successfully sent to the server.");
+		}
+	}
+	
+	public void receiveEnvelope(String filename, ObjectInputStream ois) throws Exception {
+		
+		SecretKeySpec key = new SecretKeySpec(receiveKey(ois), "AES");
+		WarnHandler.log("Successfully received symkey from remote host.");
+		
+		Cipher c = Cipher.getInstance("AES");
+		c.init(Cipher.ENCRYPT_MODE, key);
+		
+		try(ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			FileOutputStream fos = new FileOutputStream(localrepo+filename);){
+			
+			Signature s = Signature.getInstance("SHA256withRSA");
+			s.initVerify(keystore.getPublicKey());
+			
+			byte[] temp;
+			try(CipherOutputStream cos = new CipherOutputStream(baos, c);){
+				do {
+					//fazer controlo do que é enviado no servidor
+					//think better about this one tomorrow!
+					temp = CommsHandler.receiveByte(ois);
+					cos.write(temp);
+					temp = baos.toByteArray(); // temp contains bytes already deciphered
+					s.update(temp);
+					fos.write(temp);
+					baos.reset();
+				}while(temp.length != 0);
+			} //Post cipher close to force cipher to end
+			fos.write(baos.toByteArray());
+			s.update(baos.toByteArray());
+			
+			byte[] sig = CommsHandler.receiveByte(ois);
+			WarnHandler.log("Signature received from remote host.");
+			if(s.verify(sig)) {
+				WarnHandler.log("Received file's signature matches generated signature.");
+			} else {
+				WarnHandler.log("Received fiel's signature does not match generated signature.");
+			}
+			
+		}
 		
 	}
 }

@@ -1,10 +1,12 @@
 Implementado:
 flag -c
 flag -g parcialmente (faz download dos ficheiros cifrados com o -c)
+flag -s parcialmente (Gera assinatura e coloca assinatura no servidor)
+flag -e
 
 por Implementar
-flag -e
-flag -s (Algoritmo que gera e verifica a assinatura implementado mas pode n ser o que a prof quer)
+flag -c : tem um bug em que o ficheiro enviado pro servidor fica incompleto devido a implemntação no commshandler, fix later
+flag -s parcialmente (Download e verificação local)
 flag -g (Download das assinaturas e respetiva verificação. Download dos envelopes.)
 
 Nota:
