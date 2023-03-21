@@ -55,6 +55,15 @@ public class ServerOperations {
 				f.delete();
 			}
 		}
+		for(File f : files.listFiles()) {
+			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
+			boolean ef = !Files.exists(Path.of(fdir+name+".assinado")); 
+			boolean es = !Files.exists(Path.of(sdir+name+".assinatura"));
+			if(!ef && es) {
+				WarnHandler.error(name+": file doesn't have respective signature file. Deleting...");
+				f.delete();
+			}
+		}
 		WarnHandler.log("Validation complete.");
 	}
 	
