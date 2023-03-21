@@ -1,13 +1,28 @@
 Implementado:
 flag -c
 flag -g parcialmente (faz download dos ficheiros cifrados com o -c)
-flag -s parcialmente (Gera assinatura e coloca assinatura no servidor)
-flag -e
+flag -s 
+flag -e tecnicamente parcialmente (invocar as operações do -c e -s para
+		o conjunto ficheiro+chave+assinatura no servidor. Approach lazy
+		mas praquê fazer melhor?)
 
 por Implementar
-flag -c : tem um bug em que o ficheiro enviado pro servidor fica incompleto devido a implemntação no commshandler, fix later
-flag -s parcialmente (Download e verificação local)
-flag -g (Download das assinaturas e respetiva verificação. Download dos envelopes.)
+
+flag -e :
+	-Implementação concreta: -e é uma funcionalidade composta. é só
+	reciclar codigo das outras para implementar devidamente.
+
+flag -g :
+	-Adaptaçao do script que faz a verificação para funcionar em esquema
+	cliente servidor (por agora lê apenas ficheiros locais)
+	-Ascrescentar a parte desta funcionalidade relacionada com o -e
+	-Acrescentar  no servidor e modificar código no cliente que permita
+	apenas enviar para o servidor o nome do fichero original (ou seja, 
+	sem qualquer uma das extensões ".cifrado;.assinatura;.envelope;etc)
+	
+Neat to haves:
+	Tentar fazer javadoc de maior parte das funções para nos lembrarmos 
+	e facilitar o trabalho para a segunda entrega
 
 Nota:
 Para comunicações entre o server e o cliente usar funções definidas na classe CommsHandler

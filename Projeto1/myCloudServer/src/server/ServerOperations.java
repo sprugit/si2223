@@ -40,7 +40,8 @@ public class ServerOperations {
 		//lançar warning e apagar o ficheiro. Talvez perguntar à prof o q fazer nesse caso
 		File files = new File(fdir);
 		File keys = new File(kdir);
-		for(File f : files.listFiles()) {
+		File sigs = new File(sdir);
+		for(File f : files.listFiles()) { //.envelope e .cifrado guardados aqui, se qualquer um deles não tiver chave tá invalido
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
 			if(!Files.exists(Path.of(kdir+name+".chave_secreta"))) {
 				WarnHandler.error(name+": file doesn't have respective secret key file. Deleting...");
@@ -49,17 +50,17 @@ public class ServerOperations {
 		}
 		for(File f : keys.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")); 
+			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")) || !Files.exists(Path.of(fdir+name+".seguro"));
 			if(ef) {
 				WarnHandler.error(name+": file doesn't have respective ciphered key file. Deleting...");
 				f.delete();
 			}
 		}
-		for(File f : files.listFiles()) {
+		for(File f : sigs.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			boolean ef = !Files.exists(Path.of(fdir+name+".assinado")); 
+			boolean ef = !Files.exists(Path.of(fdir+name+".assinado")) || !Files.exists(Path.of(fdir+name+".seguro")); 
 			boolean es = !Files.exists(Path.of(sdir+name+".assinatura"));
-			if(!ef && es) {
+			if((!ef && es) || (ef && !es)) {
 				WarnHandler.error(name+": file doesn't have respective signature file. Deleting...");
 				f.delete();
 			}
@@ -144,9 +145,7 @@ public class ServerOperations {
 	//TODO to be implemented
 	public void receiveEnvelope(String filename, ObjectInputStream ois) throws Exception {
 		try(FileOutputStream fos = new FileOutputStream(fdir + filename + ".envelope");){
-			fos.write(CommsHandler.receiveByte(ois)); //receive key
-			CommsHandler.ReceiveAll(ois, fos); //receive file contents
-			fos.write(CommsHandler.receiveByte(ois)); //receive signature
+			
 		}
 		
 	}
