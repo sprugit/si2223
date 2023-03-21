@@ -55,8 +55,7 @@ public class CommsHandler {
 	/**
 	 * Lê todos os bytes disponíveis em InputStream e escreve-los para ObjcetOutputStream. 
 	 * 
-	 * 
-	 * @param in - InputStream (Tipicamente um FileInputStream ou CipherInputStream)
+	 * @param in - InputStream (Tipicamente um FileInputStream)
 	 * @param out - ObjectOutputStream
 	 * @throws Exception
 	 */

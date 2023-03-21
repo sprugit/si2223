@@ -88,7 +88,7 @@ public class myCloud extends WarnHandler {
 
 					if (check) {
 
-						byte[] key = clop.sendFile(filename, inStream, outStream);
+						byte[] key = clop.sendFile(filename, outStream);
 						clop.sendKey(key, outStream);
 						log("File :" + filename + " uploaded successfully.");
 

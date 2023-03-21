@@ -19,11 +19,10 @@ public class ServerOperations {
 	private static final String fdir = basepath + "/files/";
 	private static final String sdir = basepath + "/signatures/";
 	private static final String kdir = basepath + "/keys/";
-	private static final String edir = basepath + "/envelopes/";
 	private static ServerOperations instance;
 
 	private ServerOperations() {
-		String[] dirs = { fdir, sdir, kdir, edir };
+		String[] dirs = { fdir, sdir, kdir};
 		for (String toValidate : dirs) {
 			File f = new File(toValidate);
 			if (!f.exists()) {
@@ -41,15 +40,7 @@ public class ServerOperations {
 		//lançar warning e apagar o ficheiro. Talvez perguntar à prof o q fazer nesse caso
 		File files = new File(fdir);
 		File keys = new File(kdir);
-		File envs = new File(edir);
 		for(File f : files.listFiles()) {
-			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			if(!Files.exists(Path.of(kdir+name+".chave_secreta"))) {
-				WarnHandler.error(name+": file doesn't have respective secret key file. Deleting...");
-				f.delete();
-			}
-		}
-		for(File f : envs.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
 			if(!Files.exists(Path.of(kdir+name+".chave_secreta"))) {
 				WarnHandler.error(name+": file doesn't have respective secret key file. Deleting...");
@@ -59,8 +50,7 @@ public class ServerOperations {
 		for(File f : keys.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
 			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")); 
-			boolean ee = !Files.exists(Path.of(edir+name+".envelope"));
-			if(ef && ee) {
+			if(ef) {
 				WarnHandler.error(name+": file doesn't have respective ciphered key file. Deleting...");
 				f.delete();
 			}
@@ -83,21 +73,19 @@ public class ServerOperations {
 		return ec && ek;
 	}
 	
-	//Provavelemente não é a approach mais correta para o caso do envelope tendo em conta as assinaturas, cehck later
-	@Deprecated
-	public boolean existsEnvelope(String filename) {
-		boolean ee = Files.exists(Path.of(edir+filename+".envelope"),LinkOption.NOFOLLOW_LINKS);
-		boolean ek = Files.exists(Path.of(kdir+filename+".chave_secreta"),LinkOption.NOFOLLOW_LINKS);
-		boolean ea = Files.exists(Path.of(sdir+filename+".assinado"),LinkOption.NOFOLLOW_LINKS);
-		return ee && ek && ea;
-	}
-	
 	public boolean existsSignature(String filename) {
 		boolean ef = Files.exists(Path.of(fdir+filename+".assinado"),LinkOption.NOFOLLOW_LINKS);
 		boolean es = Files.exists(Path.of(sdir+filename+".assinatura"),LinkOption.NOFOLLOW_LINKS);
 		return ef && es;
 	}
 
+	public boolean existsEnvelope(String filename) {
+		boolean ee = Files.exists(Path.of(fdir+filename+".envelope"),LinkOption.NOFOLLOW_LINKS);
+		boolean ek = Files.exists(Path.of(kdir+filename+".chave_secreta"),LinkOption.NOFOLLOW_LINKS);
+		boolean ea = Files.exists(Path.of(sdir+filename+".assinado"),LinkOption.NOFOLLOW_LINKS);
+		return ee && ek && ea;
+	}
+	
 	public void receiveCipher(String filename, ObjectInputStream ois) throws Exception {
 		try(FileOutputStream fos = new FileOutputStream(fdir+filename+".cifrado")){
 			CommsHandler.ReceiveAll(ois, fos);
