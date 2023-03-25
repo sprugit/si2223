@@ -2,7 +2,9 @@ package server;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
@@ -41,6 +43,9 @@ public class ServerOperations {
 		File files = new File(fdir);
 		File keys = new File(kdir);
 		File sigs = new File(sdir);
+		
+		//se usarmos apenas a opcao -s e dermos restart ao servidor ele apaga o ficheiro
+		/*
 		for(File f : files.listFiles()) { //.envelope e .cifrado guardados aqui, se qualquer um deles não tiver chave tá invalido
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
 			if(!Files.exists(Path.of(kdir+name+".chave_secreta"))) {
@@ -48,17 +53,19 @@ public class ServerOperations {
 				f.delete();
 			}
 		}
+		*/
 		for(File f : keys.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")) || !Files.exists(Path.of(fdir+name+".seguro"));
+			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")) || !Files.exists(Path.of(kdir+name+".chave_secreta"));
 			if(ef) {
 				WarnHandler.error(name+": file doesn't have respective ciphered key file. Deleting...");
 				f.delete();
 			}
 		}
+		//ao usar apenas a opcao -s e dermos restart ao servidor o ficheiro é apagado
 		for(File f : sigs.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			boolean ef = !Files.exists(Path.of(fdir+name+".assinado")) || !Files.exists(Path.of(fdir+name+".seguro")); 
+			boolean ef = !Files.exists(Path.of(fdir+name+".assinado")); // || !Files.exists(Path.of(fdir+name+".seguro")); 
 			boolean es = !Files.exists(Path.of(sdir+name+".assinatura"));
 			if((!ef && es) || (ef && !es)) {
 				WarnHandler.error(name+": file doesn't have respective signature file. Deleting...");
@@ -90,7 +97,7 @@ public class ServerOperations {
 	}
 
 	public boolean existsEnvelope(String filename) {
-		boolean ee = Files.exists(Path.of(fdir+filename+".envelope"),LinkOption.NOFOLLOW_LINKS);
+		boolean ee = Files.exists(Path.of(fdir+filename+".seguro"),LinkOption.NOFOLLOW_LINKS);
 		boolean ek = Files.exists(Path.of(kdir+filename+".chave_secreta"),LinkOption.NOFOLLOW_LINKS);
 		boolean ea = Files.exists(Path.of(sdir+filename+".assinado"),LinkOption.NOFOLLOW_LINKS);
 		return ee && ek && ea;
@@ -136,12 +143,6 @@ public class ServerOperations {
 		
 	}
 	
-	public void sendSignature(String filename, ObjectOutputStream oos) throws Exception {
-		try(FileInputStream fis = new FileInputStream(sdir+filename+".assinado")){
-			//StreamHandler.transferStream(fis, oos);
-		}
-	}
-
 	//TODO to be implemented
 	public void receiveEnvelope(String filename, ObjectInputStream ois) throws Exception {
 		try(FileOutputStream fos = new FileOutputStream(fdir + filename + ".envelope");){
@@ -150,9 +151,21 @@ public class ServerOperations {
 		
 	}
 
-	//TODO to be implemented (genérico que verifica se um ficheiro existe no formato .seguro ou no formato .cifrado e manda)
-	public void sendFile(String filename, ObjectOutputStream oos) {
-
+	public void sendFile(String filename, ObjectOutputStream oos) throws Exception {
+		try(FileInputStream fis = new FileInputStream(fdir+filename+".assinado")){
+			CommsHandler.sendAll(fis, oos);
+		}
+	}
+	public void sendSignature(String filename, ObjectOutputStream oos) throws Exception {
+		try(FileInputStream fis = new FileInputStream(sdir+filename+".assinatura")){
+			CommsHandler.sendAll(fis, oos);
+		}
+	}
+	
+	public void sendSeguroFile(String filename, ObjectOutputStream oos) throws Exception {
+		try(FileInputStream fis = new FileInputStream(fdir+filename+".seguro")){
+			CommsHandler.sendAll(fis, oos);
+		}
 	}
 
 }

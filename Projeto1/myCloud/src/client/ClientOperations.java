@@ -87,7 +87,7 @@ public class ClientOperations {
 		Cipher c = Cipher.getInstance("AES");
 		c.init(Cipher.DECRYPT_MODE, key);
 
-		try(FileOutputStream fos = new FileOutputStream(localrepo+filename);
+		try(FileOutputStream fos = new FileOutputStream(localrepo+"c/"+filename);
 			CipherOutputStream cos = new CipherOutputStream(fos, c)){
 			CommsHandler.ReceiveAll(ois, cos);
 		}
@@ -136,27 +136,40 @@ public class ClientOperations {
 	    }
 	}
 	
-	public boolean verifySignature(String filename, ObjectInputStream ois) throws Exception {
-		
-		try (FileInputStream fis = new FileInputStream(filename);) {
-			byte[] signature = ois.readAllBytes(); //read key bytes
+	public boolean verifySignature(String filename, String type) throws Exception {
+	    // ir buscar o conteudo do ficheiro que foi assinado
+	    FileInputStream fileInputStream = new FileInputStream(localrepo + type + filename);
+	    byte[] fileData = new byte[fileInputStream.available()];
+	    fileInputStream.read(fileData);
+	    fileInputStream.close();
 
-			Signature s = Signature.getInstance("SHA256withRSA");
+	    // ir buscar a assinatura
+	    FileInputStream signatureInputStream = new FileInputStream(localrepo + type + filename + ".assinatura");
+	    byte[] signatureData = new byte[signatureInputStream.available()];
+	    signatureInputStream.read(signatureData);
+	    signatureInputStream.close();
 
-			// Assinatura usa chave privada para assinar
-			s.initVerify(keystore.getPublicKey());
+	    // verifificar a assinatura
+	    Signature signature = Signature.getInstance("SHA256withRSA");
+	    signature.initVerify(keystore.getPublicKey());
+	    signature.update(fileData);
+	    
+	    //apagar a assinatura, porque não é necessário manter?
+	    File signatureFile = new File(localrepo + type + filename + ".assinatura");
+	    signatureFile.delete();
 
-			long read = 0;
-			byte[] buffer = new byte[1024];
-			while (read >= 0) {
-				read = fis.read(buffer, 0, buffer.length);
-				if (read > -1) {
-					s.update(buffer, 0, (int) read);
-				}
-			}
-
-			return s.verify(signature);
+	    return signature.verify(signatureData);
+	}
+	
+	public void receiveSigFile(String filename, ObjectInputStream ois, String type) throws Exception {
+		try(FileOutputStream signedfile = new FileOutputStream(localrepo + type + filename)){
+			CommsHandler.ReceiveAll(ois, signedfile);
 		}
-	}	
+		try(FileOutputStream signature = new FileOutputStream(localrepo + type + filename + ".assinatura")){
+			signature.write(CommsHandler.receiveByte(ois));
+			signature.flush();
+		}
+	}
+	
 	
 }

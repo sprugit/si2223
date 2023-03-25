@@ -132,17 +132,47 @@ public class myCloud extends WarnHandler {
 				for (String filename : files) {
 
 					outStream.writeObject((String) filename);
-					check = (boolean) inStream.readObject();
+					boolean cifCheck = (boolean) inStream.readObject();
 
-					if (check) {
-
+					if (cifCheck) {
 						byte[] key = clop.receiveKey(inStream);
 						clop.receiveFile(filename, inStream, key);
 						log("File :" + filename + " downloaded successfully.");
 
 					} else {
-						log("File doesn't exist on the server. Skipping...");
+						log("Cif file doesn't exist on the server. Skipping...");
 					}
+					boolean sigCheck = (boolean) inStream.readObject();
+					if (sigCheck) {
+						
+						clop.receiveSigFile(filename, inStream, "s/");
+						if (clop.verifySignature(filename, "s/")) {
+							log(filename + ":signature verification: valid");
+						}else {
+							log(filename + ":signature verification: not valid ");
+						}
+					} else {
+						log("Sig file doesn't exist on the server. Skipping...");
+					}
+					/*
+					boolean envCheck = (boolean) inStream.readObject();
+					if (envCheck) {
+						byte[] key = clop.receiveKey(inStream);
+						clop.receiveFile(filename, inStream, key);
+						log("File :" + filename + " downloaded successfully.");
+	
+						clop.receiveSigFile(filename, inStream, "e/");
+						if (clop.verifySignature(filename, "e/")) {
+							log(filename + ":signature verification: valid");
+						}else {
+							log(filename + ":signature verification: not valid ");
+						}
+
+					} else {
+						log("Env file doesn't exist on the server. Skipping...");
+					}
+					*/
+					
 				}
 				// Informa o servidor que vamos parar de enviar ficheiros
 				outStream.writeObject((boolean) false);
