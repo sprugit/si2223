@@ -6,8 +6,6 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import javax.print.attribute.standard.Severity;
-
 import shared.WarnHandler;
 
 public class myCloudServer extends WarnHandler {
@@ -42,14 +40,14 @@ public class myCloudServer extends WarnHandler {
 
 	private void serve() throws IOException {
 
-		ServerSocket socket = new ServerSocket(port);
-		log("Server listening @ port:" + port);
-		while (true) {
-			Socket inputSocket = socket.accept();
-			ServThread newThread = new ServThread(inputSocket);
-			newThread.start();
+		try(ServerSocket socket = new ServerSocket(port);){
+			log("Server listening @ port:" + port);
+			while (true) {
+				Socket inputSocket = socket.accept();
+				ServThread newThread = new ServThread(inputSocket);
+				newThread.start();
+			}
 		}
-
 	}
 
 	private class ServThread extends Thread {
@@ -93,7 +91,7 @@ public class myCloudServer extends WarnHandler {
 						if(o instanceof String) {
 							
 							String filename = (String) o;
-							fileExists = !svop.existsCipher(filename);
+							fileExists = !svop.existsFile(filename);
 							outStream.writeObject((Boolean) fileExists);
 							
 							if(fileExists) {
@@ -120,7 +118,7 @@ public class myCloudServer extends WarnHandler {
 						o = inStream.readObject();
 						if(o instanceof String) {
 							String filename = (String) o;
-							fileExists = !svop.existsSignature(filename);
+							fileExists = !svop.existsFile(filename);
 							outStream.writeObject((Boolean) fileExists);
 							
 							if(fileExists) {
@@ -143,6 +141,28 @@ public class myCloudServer extends WarnHandler {
 				case "-e":
 					log("User is attempting to upload both a file and the respective signature");
 					
+					while(isReceiving) {
+						o = inStream.readObject();
+						if(o instanceof String) {
+							String filename = (String) o;
+							fileExists = !svop.existsFile(filename);
+							outStream.writeObject((Boolean) fileExists);
+							
+							if(fileExists) {
+								
+								log("Receiving file "+filename+" from user.");
+								svop.receiveEnvelope(filename, inStream);
+								log("Received "+ filename +" sucessfully from user.");
+								
+							} else {
+								log(filename+": already exists! Skipping...");
+							}
+										
+						}else if(o instanceof Boolean){
+							isReceiving = false;
+						}	
+					}
+					
 					break;
 				case "-g":
 					log("User is attempting to download files");
@@ -153,57 +173,40 @@ public class myCloudServer extends WarnHandler {
 						if(o instanceof String) {
 							
 							String filename = (String) o;
-							fileExists = svop.existsCipher(filename);
-							outStream.writeObject((Boolean) fileExists);
-							//cifrado
-							if(fileExists) {
-								log("Sending "+filename+" to user.");
-								
-								log("Sending key for file "+filename+" to user.");
-								svop.sendKey(filename, outStream);
-								log("Key sent successfully!");
-								log("Sending ciphered file "+filename+" to user.");
-								svop.sendCipher(filename, outStream);
-								log(filename+": File "+filename+" was sent successfully");
-								
-							} else {
-								log(filename+": cipher doesn't exist! Skipping...");
+							Integer type = 0;
+							if(svop.existsCipher(filename)) {
+								type = 1;
+							} else if (svop.existsSignature(filename)) {
+								type = 2;
+							} else if (svop.existsEnvelope(filename)) {
+								type = 3;
 							}
-							//assinado
-							boolean sigFileExists = svop.existsSignature(filename);
-							outStream.writeObject((Boolean) sigFileExists);
-							if (sigFileExists) {
-								log("Sending signed file "+filename+" to user.");
-								svop.sendFile(filename, outStream);
-								svop.sendSignature(filename, outStream);
-								log(filename + " sent successfully!");
-								
-							}else {
-								log(filename+": signature doesn't exist! Skipping...");
+							outStream.writeObject(type);
+							switch(type) {
+								case 0:{
+									log("User requested file: "+ filename + " doesn't exist.");
+									break;
+								}
+								case 1:{
+									log("User requested ciphered file for file: "+ filename);
+									svop.sendKey(filename, outStream);
+									svop.sendCipher(filename, outStream);
+									break;
+								}
+								case 2:{
+									log("User requested signature for file: "+ filename);
+									svop.sendSignature(filename, outStream);
+									break;
+								}
+								case 3:{
+									log("User requested envelope for file: "+ filename);
+									svop.sendEnvelope(filename, outStream);
+									break;
+								}
 							}
-							//envelope
-							/*
-							boolean envfileExists = svop.existsEnvelope(filename);
-							outStream.writeObject((Boolean) envfileExists);	
-							if(envfileExists) {
-								log("Sending key for file "+filename+" to user.");
-								svop.sendKey(filename, outStream);
-								log("Key sent successfully!");
-								log("Sending secured file "+filename+" to user.");
-								svop.sendSeguroFile(filename, outStream);
-								log(filename+": File "+filename+" was sent successfully");
-								
-							} else {
-								log(filename+": envelope doesn't exist! Skipping...");
-							}
-							*/
-							
-									
-							
 						} else if(o instanceof Boolean){
 							isReceiving = false;
-						}	
-						
+						}					
 					}
 					
 					break;

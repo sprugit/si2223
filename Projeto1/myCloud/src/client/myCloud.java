@@ -67,8 +67,6 @@ public class myCloud extends WarnHandler {
 				ObjectInputStream inStream = new ObjectInputStream(soc.getInputStream());) {
 			log("Connected to remote host successfully.");
 
-			//Object o;
-
 			boolean check;
 
 			outStream.writeObject((String) args[op]);
@@ -82,19 +80,23 @@ public class myCloud extends WarnHandler {
 			case "-c":
 
 				for (String filename : files) {
+					
+					if(Files.exists(Path.of(filename),LinkOption.NOFOLLOW_LINKS)) {
+						outStream.writeObject((String) filename);
+						check = (boolean) inStream.readObject();
 
-					outStream.writeObject((String) filename);
-					check = (boolean) inStream.readObject();
+						if (check) {
 
-					if (check) {
+							clop.sendFile(filename, outStream);
+							log("File :" + filename + " uploaded successfully.");
 
-						byte[] key = clop.sendFile(filename, outStream);
-						clop.sendKey(key, outStream);
-						log("File :" + filename + " uploaded successfully.");
-
+						} else {
+							log("File already exists on the server. Skipping...");
+						}
 					} else {
-						log("File already exists on the server. Skipping...");
+						log("File :" + filename + "could not be found locally");
 					}
+
 				}
 				// Informa o servidor que vamos parar de enviar ficheiros
 				outStream.writeObject((boolean) false);
@@ -123,60 +125,58 @@ public class myCloud extends WarnHandler {
 				// Informa o servidor que vamos parar de enviar ficheiros
 				outStream.writeObject((boolean) false);
 				break;
-			case "-e":
-
 				
-				break;
-			case "-g":
-
+			case "-e":
 				for (String filename : files) {
+					
+					if(Files.exists(Path.of(filename),LinkOption.NOFOLLOW_LINKS)) {
+						outStream.writeObject((String) filename);
+						check = (boolean) inStream.readObject();
 
-					outStream.writeObject((String) filename);
-					boolean cifCheck = (boolean) inStream.readObject();
+						if (check) {
 
-					if (cifCheck) {
-						byte[] key = clop.receiveKey(inStream);
-						clop.receiveFile(filename, inStream, key);
-						log("File :" + filename + " downloaded successfully.");
-
-					} else {
-						log("Cif file doesn't exist on the server. Skipping...");
-					}
-					boolean sigCheck = (boolean) inStream.readObject();
-					if (sigCheck) {
-						
-						clop.receiveSigFile(filename, inStream, "s/");
-						if (clop.verifySignature(filename, "s/")) {
-							log(filename + ":signature verification: valid");
-						}else {
-							log(filename + ":signature verification: not valid ");
+							clop.sendEnvelope(filename, outStream);
+							log("File :" + filename + " uploaded successfully.");
+							
+						} else {
+							log("File already exists on the server. Skipping...");
 						}
 					} else {
-						log("Sig file doesn't exist on the server. Skipping...");
+						log("File :" + filename + "could not be found locally");
 					}
-					/*
-					boolean envCheck = (boolean) inStream.readObject();
-					if (envCheck) {
-						byte[] key = clop.receiveKey(inStream);
-						clop.receiveFile(filename, inStream, key);
-						log("File :" + filename + " downloaded successfully.");
-	
-						clop.receiveSigFile(filename, inStream, "e/");
-						if (clop.verifySignature(filename, "e/")) {
-							log(filename + ":signature verification: valid");
-						}else {
-							log(filename + ":signature verification: not valid ");
-						}
-
-					} else {
-						log("Env file doesn't exist on the server. Skipping...");
-					}
-					*/
 					
 				}
-				// Informa o servidor que vamos parar de enviar ficheiros
 				outStream.writeObject((boolean) false);
-
+				break;
+			case "-g":
+				
+				for (String filename : files) {
+					
+					outStream.writeObject((String) filename);
+					int type = (int) inStream.readObject();
+					switch(type) {
+						case 0:{
+							log("File doesn't exist on remote cloud. Skipping...");
+							break;
+						}
+						case 1:{
+							log("Found ciphered file on remote cloud. Downloading...");
+							clop.receiveFile(filename, inStream);
+							break;
+						}
+						case 2:{
+							log("Found signature file on remote cloud. Verifying...");
+							clop.verifySignature(inStream);
+							break;
+						}
+						case 3:{
+							log("Found envelope file on remote cloud. Downloading and Verifying...");
+							clop.receiveEnvelope(filename, inStream);
+							break;
+						}
+					}
+				}
+				outStream.writeObject((boolean) false);
 				break;
 			}
 		} catch (IOException e) {

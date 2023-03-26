@@ -36,7 +36,7 @@ public class ServerOperations {
 				}
 			}
 		}
-		
+		/*
 		//Esta parte provavelmente poderia estar melhor implementada, do that later maybe.
 		//Se um ficheiro existir sem chave secreta ou uma chave secreta existir sem respetivo ficheiro
 		//lançar warning e apagar o ficheiro. Talvez perguntar à prof o q fazer nesse caso
@@ -45,18 +45,9 @@ public class ServerOperations {
 		File sigs = new File(sdir);
 		
 		//se usarmos apenas a opcao -s e dermos restart ao servidor ele apaga o ficheiro
-		/*
-		for(File f : files.listFiles()) { //.envelope e .cifrado guardados aqui, se qualquer um deles não tiver chave tá invalido
-			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			if(!Files.exists(Path.of(kdir+name+".chave_secreta"))) {
-				WarnHandler.error(name+": file doesn't have respective secret key file. Deleting...");
-				f.delete();
-			}
-		}
-		*/
 		for(File f : keys.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")) || !Files.exists(Path.of(kdir+name+".chave_secreta"));
+			boolean ef = !Files.exists(Path.of(fdir+name+".cifrado")) && !Files.exists(Path.of(fdir+name+".seguro"));
 			if(ef) {
 				WarnHandler.error(name+": file doesn't have respective ciphered key file. Deleting...");
 				f.delete();
@@ -65,13 +56,13 @@ public class ServerOperations {
 		//ao usar apenas a opcao -s e dermos restart ao servidor o ficheiro é apagado
 		for(File f : sigs.listFiles()) {
 			String name = f.getName().substring(0, f.getName().lastIndexOf("."));
-			boolean ef = !Files.exists(Path.of(fdir+name+".assinado")); // || !Files.exists(Path.of(fdir+name+".seguro")); 
+			boolean ef = !Files.exists(Path.of(fdir+name+".assinado")) || !Files.exists(Path.of(fdir+name+".seguro")); 
 			boolean es = !Files.exists(Path.of(sdir+name+".assinatura"));
 			if((!ef && es) || (ef && !es)) {
 				WarnHandler.error(name+": file doesn't have respective signature file. Deleting...");
 				f.delete();
 			}
-		}
+		}*/
 		WarnHandler.log("Validation complete.");
 	}
 	
@@ -99,8 +90,12 @@ public class ServerOperations {
 	public boolean existsEnvelope(String filename) {
 		boolean ee = Files.exists(Path.of(fdir+filename+".seguro"),LinkOption.NOFOLLOW_LINKS);
 		boolean ek = Files.exists(Path.of(kdir+filename+".chave_secreta"),LinkOption.NOFOLLOW_LINKS);
-		boolean ea = Files.exists(Path.of(sdir+filename+".assinado"),LinkOption.NOFOLLOW_LINKS);
+		boolean ea = Files.exists(Path.of(sdir+filename+".assinatura"),LinkOption.NOFOLLOW_LINKS);
 		return ee && ek && ea;
+	}
+	
+	public boolean existsFile(String filename) {
+		return existsCipher(filename) || existsSignature(filename) || existsEnvelope(filename);
 	}
 	
 	public void receiveCipher(String filename, ObjectInputStream ois) throws Exception {
@@ -140,32 +135,43 @@ public class ServerOperations {
 			signature.write(CommsHandler.receiveByte(ois));
 			signature.flush();
 		}
-		
 	}
 	
-	//TODO to be implemented
-	public void receiveEnvelope(String filename, ObjectInputStream ois) throws Exception {
-		try(FileOutputStream fos = new FileOutputStream(fdir + filename + ".envelope");){
-			
-		}
-		
-	}
-
-	public void sendFile(String filename, ObjectOutputStream oos) throws Exception {
-		try(FileInputStream fis = new FileInputStream(fdir+filename+".assinado")){
-			CommsHandler.sendAll(fis, oos);
-		}
-	}
 	public void sendSignature(String filename, ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(sdir+filename+".assinatura")){
-			CommsHandler.sendAll(fis, oos);
+			byte[] sig = fis.readNBytes(256); //chave tem 256 bytes
+			CommsHandler.sendFullByteArray(sig, oos);
+		}
+		try(FileInputStream fis1 = new FileInputStream(fdir+filename+".assinado")){
+			CommsHandler.sendAll(fis1, oos);
 		}
 	}
 	
-	public void sendSeguroFile(String filename, ObjectOutputStream oos) throws Exception {
-		try(FileInputStream fis = new FileInputStream(fdir+filename+".seguro")){
-			CommsHandler.sendAll(fis, oos);
+	public void receiveEnvelope(String filename, ObjectInputStream ois) throws Exception {
+		
+		receiveKey(filename, ois);
+		
+		try(FileOutputStream fos = new FileOutputStream(fdir + filename + ".seguro");){
+			CommsHandler.ReceiveAll(ois, fos);
+		}
+		
+		try(FileOutputStream fos1 = new FileOutputStream(sdir + filename + ".assinatura");){
+			byte[] sig = CommsHandler.receiveByte(ois);
+			fos1.write(sig);
 		}
 	}
+	
+	public void sendEnvelope(String filename, ObjectOutputStream oos) throws Exception {
 
+		sendKey(filename, oos);
+		
+		try(FileInputStream fis = new FileInputStream(fdir + filename + ".seguro");){
+			CommsHandler.sendAll(fis, oos);
+		}
+		
+		try(FileInputStream fis1 = new FileInputStream(sdir + filename + ".assinatura");){
+			byte[] sig = fis1.readNBytes(256);
+			CommsHandler.sendFullByteArray(sig, oos);
+		}	
+	}
 }
