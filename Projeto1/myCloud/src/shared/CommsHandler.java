@@ -66,7 +66,7 @@ public class CommsHandler {
 		do {
 			read = in.read(buffer, 0, buffer.length); // ler bytes do ficheiro para o buffer
 			sendNBytes(buffer, (int) read,  out);
-		}while(read == buffer.length);
+		}while(in.available() > 0);
 		sendFullByteArray(new byte[0], out);
 	}
 	

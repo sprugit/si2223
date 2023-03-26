@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.Signature;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -170,20 +171,24 @@ public class ClientOperations {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();){
 			
 			byte[] buf = new byte[512];
-			long read;
+			byte[] temp;
+			long total = 0;
+			long read; 
 			try(CipherOutputStream cos = new CipherOutputStream(baos, c)){
 				do {
-					
 					read = fis.read(buf, 0 , buf.length);
 					s.update(buf, 0, (int) read);
 					cos.write(buf, 0, (int) read);
-					CommsHandler.sendFullByteArray(baos.toByteArray(), oos);
+					temp = baos.toByteArray();
+					if(temp.length != 0) {
+						CommsHandler.sendFullByteArray(temp, oos);
+					}
 					baos.reset();
-					
 				}while(read == buf.length);
 			} //Terminar o bloco da cifra
+			temp = baos.toByteArray();
 			
-			CommsHandler.sendFullByteArray(baos.toByteArray(), oos);
+			CommsHandler.sendFullByteArray(temp , oos);
 			CommsHandler.sendFullByteArray(new byte[0], oos); //Informar server que acabou o envio
 			
 			//Enviar para o servidor a assinatura
@@ -205,17 +210,17 @@ public class ClientOperations {
         	ByteArrayOutputStream baos = new ByteArrayOutputStream();){
         	
         	byte[] temp;
+        	long read;
         	try(CipherOutputStream cos = new CipherOutputStream(baos, c)){
         		do {
-        			
         			temp = CommsHandler.receiveByte(ois);
+        			read = temp.length;
         			cos.write(temp);
         			temp = baos.toByteArray();
         			baos.reset();
         			s.update(temp);
         			fos.write(temp);
-        			
-        		}while(temp.length != 0);	
+        		}while(read != 0);	
         	} // Terminar bloco da cifra
         	
         	temp = baos.toByteArray();

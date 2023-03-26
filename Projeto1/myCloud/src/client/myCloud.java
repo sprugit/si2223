@@ -104,22 +104,22 @@ public class myCloud extends WarnHandler {
 			case "-s":
 				for (String filename : files) {
 					
-					// Se não existe localmente dar log e passar para a proxima iteração
-					if (!Files.exists(Path.of(filename),LinkOption.NOFOLLOW_LINKS)) {
-						log(filename + " not found");
-						continue;
-					}
+					if(Files.exists(Path.of(filename),LinkOption.NOFOLLOW_LINKS)) {
 					
-					outStream.writeObject((String) filename);
-					check = (boolean) inStream.readObject();
-					
-					if (check) {
+						outStream.writeObject((String) filename);
+						check = (boolean) inStream.readObject();
 						
-						clop.sendSignature(filename, outStream);
-						log(filename + " and signature updated sucessfully.");
-
+						if (check) {
+							
+							clop.sendSignature(filename, outStream);
+							log(filename + " and signature updated sucessfully.");
+	
+						} else {
+							log("File already exists on the server. Skipping...");
+						}
+						
 					} else {
-						log("File already exists on the server. Skipping...");
+						log("File: " + filename + "could not be found locally");
 					}
 				}
 				// Informa o servidor que vamos parar de enviar ficheiros
@@ -136,13 +136,13 @@ public class myCloud extends WarnHandler {
 						if (check) {
 
 							clop.sendEnvelope(filename, outStream);
-							log("File :" + filename + " uploaded successfully.");
+							log("File: " + filename + " uploaded successfully.");
 							
 						} else {
 							log("File already exists on the server. Skipping...");
 						}
 					} else {
-						log("File :" + filename + "could not be found locally");
+						log("File: " + filename + " could not be found locally");
 					}
 					
 				}
@@ -152,27 +152,31 @@ public class myCloud extends WarnHandler {
 				
 				for (String filename : files) {
 					
-					outStream.writeObject((String) filename);
-					int type = (int) inStream.readObject();
-					switch(type) {
-						case 0:{
-							log("File doesn't exist on remote cloud. Skipping...");
-							break;
-						}
-						case 1:{
-							log("Found ciphered file on remote cloud. Downloading...");
-							clop.receiveFile(filename, inStream);
-							break;
-						}
-						case 2:{
-							log("Found signature file on remote cloud. Verifying...");
-							clop.verifySignature(inStream);
-							break;
-						}
-						case 3:{
-							log("Found envelope file on remote cloud. Downloading and Verifying...");
-							clop.receiveEnvelope(filename, inStream);
-							break;
+					if(Files.exists(Path.of("local/" + filename),LinkOption.NOFOLLOW_LINKS)) {
+						log("File already exists locally. Skipping...");
+					} else {
+						outStream.writeObject((String) filename);
+						int type = (int) inStream.readObject();
+						switch(type) {
+							case 0:{
+								log("File doesn't exist on remote cloud. Skipping...");
+								break;
+							}
+							case 1:{
+								log("Found ciphered file on remote cloud. Downloading...");
+								clop.receiveFile(filename, inStream);
+								break;
+							}
+							case 2:{
+								log("Found signature file on remote cloud. Verifying...");
+								clop.verifySignature(inStream);
+								break;
+							}
+							case 3:{
+								log("Found envelope file on remote cloud. Downloading and Verifying...");
+								clop.receiveEnvelope(filename, inStream);
+								break;
+							}
 						}
 					}
 				}
