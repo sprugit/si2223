@@ -1,0 +1,19 @@
+Steps:
+Gerar keystore do Servidor
+	keytool -genkeypair -alias server -keyalg RSA -keysize 2048 -keystore keystore.server -storetype PKCS12
+
+Gerar truststore do Cliente
+Exportar Certificado do Servidor e importá-lo no Cliente
+	keytool -exportcert -alias server -file cert.server -keystore keystore.server
+	keytool -importcert -alias server -keystore truststore.client -file cert.server -storetype PKCS12
+
+Alterar Socket do servidor para utilizar SSL
+	ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
+	ServerSocket ss = ssf.createServerSocket(num_port);
+
+Alterar Socket do cliente para utilizar SSL
+	SocketFactory sf = SSLSocketFactory.getDefault();
+	Socket s = sf.createServerSocket(remote_ip,num_port);
+
+Indicar ao servidor a keystore
+Indicar ao cliente a truststore
