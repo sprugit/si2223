@@ -9,6 +9,11 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+import javax.net.ServerSocketFactory;
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocketFactory;
+
 import filetype.ClientFileFactory;
 import shared.Logger;
 
@@ -54,10 +59,14 @@ public class myCloud extends Logger {
 		}
 		if (1 > port || port > 65535)
 			exit("Invalid argument: Invalid Port: must be between 1 and 65535.");
-
+		
+		System.setProperty("javax.net.ssl.trustStore", "truststore.client");
+		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
+	  	
+		SocketFactory sf = SSLSocketFactory.getDefault( );
 		Socket soc = null;
 		try {
-			soc = new Socket(address, port);
+			soc = sf.createSocket(address, port);
 		} catch (Exception e) {
 			exit("Connection by remote host was rejected.");
 		}

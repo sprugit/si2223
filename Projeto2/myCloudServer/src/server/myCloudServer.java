@@ -6,6 +6,9 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import javax.net.ServerSocketFactory;
+import javax.net.ssl.SSLServerSocketFactory;
+
 import abstracts.ConcreteServerFile;
 import filetype.Assinado;
 import filetype.Cifrado;
@@ -43,8 +46,11 @@ public class myCloudServer {
 	}
 
 	private void serve() throws IOException {
-
-		try(ServerSocket socket = new ServerSocket(port);){
+		System.setProperty("javax.net.ssl.keyStore", "keystore.server");
+		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
+		ServerSocketFactory ssf = SSLServerSocketFactory.getDefault( );
+		
+		try(ServerSocket socket = ssf.createServerSocket(port);){
 			Logger.log("Server listening @ port:" + port);
 			while (true) {
 				Socket inputSocket = socket.accept();
