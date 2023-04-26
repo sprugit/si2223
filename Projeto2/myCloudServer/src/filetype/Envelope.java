@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import abstracts.ConcreteServerFile;
+import server.PathDefs;
 import shared.Logger;
 
 public class Envelope extends ConcreteServerFile {
@@ -22,7 +23,7 @@ public class Envelope extends ConcreteServerFile {
 
 	@Override
 	public boolean exists() throws IOException {
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		return Files.exists(Path.of(path)) && new Chave(this.filename).exists()
 				&& new Assinatura(this.filename).exists();
 	}
@@ -30,7 +31,7 @@ public class Envelope extends ConcreteServerFile {
 	@Override
 	public void receive(ObjectInputStream ois) throws FileNotFoundException, IOException {
 		Logger.log("User is uploading envelope file: "+ filename);
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		
 		Chave kf = new Chave(this.filename);
 		kf.receive(ois);
@@ -53,7 +54,7 @@ public class Envelope extends ConcreteServerFile {
 	public void send(ObjectOutputStream oos) throws FileNotFoundException, IOException {
 		
 		Logger.log("User requested envelope for file: "+ filename);
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		
 		Chave kf = new Chave(this.filename);
 		kf.send(oos);

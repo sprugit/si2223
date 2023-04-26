@@ -1,13 +1,13 @@
 package filetype;
 
 import abstracts.ConcreteClientFile;
-import client.Keystore;
+import keystore.ClientUser;
 
 public class ClientFileFactory {
 	
-	Keystore u;
+	ClientUser u;
 
-	public ClientFileFactory(Keystore user) {
+	public ClientFileFactory(ClientUser user) {
 		this.u = user;
 	}
 	

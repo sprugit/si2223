@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public abstract class Abstract256 extends AbstractFile {
+public abstract class AbstractSigKeyFile extends AbstractUserFile {
 	
-	protected Abstract256(String filename) throws IOException {
+	protected AbstractSigKeyFile(String filename) throws IOException {
 		super(filename);
 	}
 

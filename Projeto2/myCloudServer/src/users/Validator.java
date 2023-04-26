@@ -2,35 +2,62 @@ package users;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
+import java.util.Scanner;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import server.PathDefs;
 import shared.Logger;
 
 public class Validator {
 	
-	private static final String ufilepath = "myCloudServer/users";
-	private static final String vfilepath = "myCloudServer/passwords.mac";
 	private static Validator instance = null;
 	private final String password;
 	
-	private Validator(String password) {
-		this.password = password;
+	private Validator() throws Exception {
+		
+		String password;
+		try(Scanner s = new Scanner(System.in);){
+			System.out.println("Please input a password for integrity checks:");
+			password = s.nextLine();
+			
+			if(Files.exists(Path.of(PathDefs.vpath))) {
+				
+				this.password = password;
+				verifyMAC();
+				
+			} else {
+				
+				Logger.log("Verification file doesn't exist!");
+				String i = "o";
+				
+				while(!"YyNn".contains(i)){
+					System.out.println("Verification file doesn't exist! Create new file? [y/n]");
+					i = s.nextLine();
+				}
+				
+				if("Yy".contains(i)) {
+					Logger.log("Generating new Verification file.");
+					this.password = password;
+					writeMAC();
+					Logger.log("Verification file successfully created!");
+				} else {
+					Logger.log("Skipped Verification file creation. Further Verifications are now disabled.");
+					this.password = null;
+				}
+			}
+		}
 	}
+	
 	
 	public synchronized static Validator getValidator() throws Exception {
-		return getValidator(null);
-	}
-	
-	public synchronized static Validator getValidator(String password) throws Exception {
 		if(instance == null){
-			if(password == null) {
-				throw new Exception("Password for verification can't be null!");
-			}
-			instance = new Validator(password);
+			instance = new Validator();
 		}
 		return instance;
 	}
@@ -42,7 +69,7 @@ public class Validator {
 		byte[]mac=null; 
 		m = Mac.getInstance("HmacSHA256"); 
 		m.init(key);
-		try(FileInputStream fis = new FileInputStream(ufilepath);){
+		try(FileInputStream fis = new FileInputStream(PathDefs.upath);){
 			long read = 0;
 			byte[] buff = new byte[1024];
 			do {
@@ -57,33 +84,39 @@ public class Validator {
 	private synchronized byte[] readMAC() throws Exception {
 		
 		byte[] retval = null;
- 		try(FileInputStream fis = new FileInputStream(vfilepath);){
+ 		try(FileInputStream fis = new FileInputStream(PathDefs.vpath);){
 			retval = fis.readAllBytes();
 		}
- 		Logger.log("Stored MAC value is: "+ Base64.getEncoder().encodeToString(retval));
+
  		return retval;
 	}
 	
-	protected synchronized String writeMAC() throws Exception {
-		
-		byte[] MAC = genMAC();
-		try(FileOutputStream oos = new FileOutputStream(vfilepath);){
-			oos.write(MAC, 0, MAC.length);
-			oos.flush();
+	protected synchronized void writeMAC() throws Exception {
+		if(this.password != null) {
+			
+			byte[] MAC = genMAC();
+			try(FileOutputStream oos = new FileOutputStream(PathDefs.vpath);){
+				oos.write(MAC, 0, MAC.length);
+				oos.flush();
+			}
+			Logger.log("Updated MAC value for password file.");
+			
 		}
-		Logger.log("Updated MAC value for password file.");
-		return Base64.getEncoder().encodeToString(MAC);
 	}
 	
 	protected synchronized void verifyMAC() throws Exception {
-		
-		byte[] read = readMAC();
-		byte[] gen = genMAC();
-		Logger.log("Generated MAC value is: "+ Base64.getEncoder().encodeToString(gen));
-		Logger.log("Read MAC value is: "+ Base64.getEncoder().encodeToString(read));
-		if(!Base64.getEncoder().encodeToString(gen).contentEquals(Base64.getEncoder().encodeToString(read))) {
-			Logger.elog("System integrity damaged: Mismatching MAC on users file detected.");
+		if(this.password != null) {
+			
+			byte[] read = readMAC();
+			byte[] gen = genMAC();
+			Logger.log("Generated MAC value:  "+ Base64.getEncoder().encodeToString(gen));
+			Logger.log("Stored MAC value:  "+ Base64.getEncoder().encodeToString(read));
+			if(!Base64.getEncoder().encodeToString(gen).contentEquals(Base64.getEncoder().encodeToString(read))) {
+				Logger.elog("System integrity damaged: Mismatching MAC on users file detected.\nTerminating myCloud server execution.");
+			}
+			Logger.log("Matching MACs, proceeding...");
+			
 		}
-		Logger.log("Matching MACs, proceeding...");
 	}
+
 }

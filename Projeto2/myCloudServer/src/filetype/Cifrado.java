@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import abstracts.ConcreteServerFile;
+import server.PathDefs;
 import shared.Logger;
 
 import java.io.FileInputStream;
@@ -23,14 +24,14 @@ public class Cifrado extends ConcreteServerFile{
 
 	@Override
 	public boolean exists() throws IOException {
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		return Files.exists(Path.of(path)) && new Chave(this.filename).exists();
 	}
 
 	@Override
 	public void receive(ObjectInputStream ois) throws FileNotFoundException, IOException {
 		Logger.log("User is uploading encrypted file: "+ filename);
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		
 		Chave kf = new Chave(this.filename);
 		kf.receive(ois);
@@ -49,7 +50,7 @@ public class Cifrado extends ConcreteServerFile{
 	public void send(ObjectOutputStream oos) throws FileNotFoundException, IOException {
 		
 		Logger.log("User requested encrypted file for file: "+ filename);
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		
 		Chave kf = new Chave(this.filename);
 		if(!kf.exists()) {

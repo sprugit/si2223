@@ -8,12 +8,12 @@ import java.nio.file.Path;
 import java.security.Signature;
 
 import abstracts.ConcreteClientFile;
-import client.Keystore;
+import keystore.ClientUser;
 import shared.Logger;
 
 public class Assinado extends ConcreteClientFile {
 
-	protected Assinado(Keystore user, String filepath) {
+	protected Assinado(ClientUser user, String filepath) {
 		super(user, filepath);
 	}
 

@@ -6,21 +6,22 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Key;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import client.Keystore;
+import keystore.ClientUser;
 
 public abstract class AbstractClientFile{
 	
-	protected Keystore user;
+	protected ClientUser user;
 	protected String filepath;
 	protected String filename;
 	
-	protected AbstractClientFile(Keystore user, String filepath) {
+	protected AbstractClientFile(ClientUser user, String filepath) {
 		this.filepath = filepath;
 		this.filename = (new File(filepath)).getName();
 		this.user = user;
@@ -45,17 +46,36 @@ public abstract class AbstractClientFile{
 		return k;
 	}
 	
-	protected byte[] cipherKey(byte[] kbytes, int mode) throws Exception {
-		
+	/**
+	 * 
+	 * @param kbytes
+	 * @param mode
+	 * @param k
+	 * @return
+	 * @throws Exception
+	 */
+	protected byte[] cipherKey(byte[] kbytes, int mode, Key k) throws Exception {
 		Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		if(mode == Cipher.ENCRYPT_MODE) {
-			c.init(mode, this.user.getPublicKey());
-		} else {
-			c.init(mode, this.user.getPrivateKey());
-		}
+		c.init(mode, k);
 		return c.doFinal(kbytes);
 	}
 	
+	/**
+	 * 
+	 * @param kbytes
+	 * @param mode
+	 * @return
+	 * @throws Exception
+	 */
+	protected byte[] cipherKey(byte[] kbytes, int mode) throws Exception {
+		Key k;
+		if(mode == Cipher.ENCRYPT_MODE) {
+			k = this.user.getPublicKey();
+		}else {
+			k = this.user.getPrivateKey();
+		}
+		return cipherKey(kbytes, mode, k);
+	}
 	
 	public abstract void send(ObjectOutputStream oos) throws Exception;
 	

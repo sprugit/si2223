@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import abstracts.ConcreteServerFile;
+import server.PathDefs;
 import shared.Logger;
 
 public class Assinado extends ConcreteServerFile {
@@ -22,14 +23,14 @@ public class Assinado extends ConcreteServerFile {
 
 	@Override
 	public boolean exists() throws IOException {
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		return Files.exists(Path.of(path)) && new Assinatura(this.filename).exists();
 	}
 
 	@Override
 	public void receive(ObjectInputStream ois) throws FileNotFoundException, IOException {
 		Logger.log("User is uploading signature for file: "+ filename);
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		
 		try(FileOutputStream fos = new FileOutputStream(path);){
 			
@@ -49,7 +50,7 @@ public class Assinado extends ConcreteServerFile {
 	public void send(ObjectOutputStream oos) throws FileNotFoundException, IOException {
 		
 		Logger.log("User requested signature for file: "+ filename);
-		String path = base_dir + dir +this.filename + ext;
+		String path = PathDefs.base_dir + dir +this.filename + ext;
 		
 		Assinatura a = new Assinatura(this.filename);
 		if(!a.exists()) {

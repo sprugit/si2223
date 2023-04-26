@@ -9,9 +9,10 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import abstracts.Abstract256;
+import abstracts.AbstractSigKeyFile;
+import server.PathDefs;
 
-public class Assinatura extends Abstract256 {
+public class Assinatura extends AbstractSigKeyFile {
 	
 	private static final String dir = "signatures/"; 
 	private static final String ext = ".assinatura";
@@ -22,19 +23,19 @@ public class Assinatura extends Abstract256 {
 	
 	@Override
 	public boolean exists() {
-		return Files.exists(Path.of(base_dir + dir + this.filename + ext));
+		return Files.exists(Path.of(PathDefs.base_dir + dir + this.filename + ext));
 	}
 	
 	@Override
 	public void receive(ObjectInputStream ois) throws FileNotFoundException, IOException {
-		try (FileOutputStream fos = new FileOutputStream(base_dir+dir + this.filename + ext);){
+		try (FileOutputStream fos = new FileOutputStream(PathDefs.base_dir+dir + this.filename + ext);){
 			transferData(ois, fos);
 		}
 	}
 
 	@Override
 	public void send(ObjectOutputStream oos) throws FileNotFoundException, IOException {
-		try (FileInputStream fis = new FileInputStream(base_dir+dir + this.filename + ext);) {
+		try (FileInputStream fis = new FileInputStream(PathDefs.base_dir+dir + this.filename + ext);) {
 			transferData(fis, oos);
 		}
 	}	

@@ -3,11 +3,11 @@ package abstracts;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import client.Keystore;
+import keystore.ClientUser;
 
 public class ConcreteClientFile extends AbstractClientFile {
 
-	public ConcreteClientFile(Keystore user, String filepath) {
+	public ConcreteClientFile(ClientUser user, String filepath) {
 		super(user, filepath);
 	}
 

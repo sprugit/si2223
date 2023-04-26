@@ -7,12 +7,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import server.PathDefs;
 import shared.Logger;
 
-public class ConcreteServerFile extends AbstractFile {
+public class ConcreteServerFile extends AbstractUserFile {
 
-	protected static final String dir = "files/";
-	
 	protected ConcreteServerFile(String filename) throws IOException {
 		super(filename);
 	}
@@ -47,10 +46,12 @@ public class ConcreteServerFile extends AbstractFile {
 	}
 
 	@Override
-	public void receive(ObjectInputStream ois) throws FileNotFoundException, IOException {
+	public void receive(ObjectInputStream ois) throws Exception {
+		throw new Exception("Not Implemented!");
 	}
 
 	@Override
-	public void send(ObjectOutputStream oos) throws FileNotFoundException, IOException {
+	public void send(ObjectOutputStream oos) throws Exception {
+		throw new Exception("Not Implemented!");
 	}
 }

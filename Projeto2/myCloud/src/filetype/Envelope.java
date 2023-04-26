@@ -12,12 +12,13 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 
 import abstracts.ConcreteClientFile;
-import client.Keystore;
+import client.PathDefs;
+import keystore.ClientUser;
 import shared.Logger;
 
 public class Envelope extends ConcreteClientFile {
 
-	protected Envelope(Keystore user, String filepath) {
+	protected Envelope(ClientUser user, String filepath) {
 		super(user, filepath);
 	}
 
@@ -76,7 +77,7 @@ public class Envelope extends ConcreteClientFile {
         
         int fsize = (Integer) ois.readObject();
         
-        try(FileOutputStream fos = new FileOutputStream(this.user.getUserDir() + this.filepath);
+        try(FileOutputStream fos = new FileOutputStream(PathDefs.dir + user.getUsername() + "/" + this.filepath);
         	ByteArrayOutputStream baos = new ByteArrayOutputStream();){
         	
         	byte[] temp, buf = new byte[512];

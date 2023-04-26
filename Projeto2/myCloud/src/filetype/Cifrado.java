@@ -11,12 +11,13 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 
 import abstracts.ConcreteClientFile;
-import client.Keystore;
+import client.PathDefs;
+import keystore.ClientUser;
 import shared.Logger;
 
 public class Cifrado extends ConcreteClientFile {
 
-	protected Cifrado(Keystore user, String filepath) {
+	protected Cifrado(ClientUser user, String filepath) {
 		super(user, filepath);
 	}
 
@@ -58,7 +59,7 @@ public class Cifrado extends ConcreteClientFile {
 
 		int fsize = (Integer) ois.readObject();
 		
-		try (FileOutputStream fos = new FileOutputStream(this.user.getUserDir() + this.filepath);
+		try (FileOutputStream fos = new FileOutputStream(PathDefs.dir + user.getUsername() + "/" + this.filepath);
 			CipherOutputStream cos = new CipherOutputStream(fos, c)) {
 			long read, total = 0;
 			byte[] buf = new byte[512];
