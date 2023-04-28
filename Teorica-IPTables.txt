@@ -1,0 +1,10 @@
+IPTables - módulo de firewall do unix
+
+No trabalho: Cadeias de INPUT e OUPUT (definir regras para os datagramas que entram e saíem)
+
+Definições de regras:
+	ACCEPT - aceitar
+	DROP - Rejeitar sem avisar o cliente - Descarta o datagrama
+	REJECT - Rejeitar avisando o cliente
+	
+	

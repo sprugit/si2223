@@ -1,0 +1,64 @@
+ComputadorA: 10.101.149.44
+ComputadorB: 10.101.149.45
+
+NOTA: ICMP é o protocolo que permite 
+
+5.Porto unreachable porque usou o REJECT. Recebe um pacote ICMP de volta a informar.
+
+Output para o 5 e 8:
+
+#=====================================================================================#
+PING 10.101.149.44 (10.101.149.44) 56(84) bytes of data.
+From 10.101.149.44 icmp_seq=1 Destination Port Unreachable
+From 10.101.149.44 icmp_seq=2 Destination Port Unreachable
+From 10.101.149.44 icmp_seq=3 Destination Port Unreachable
+From 10.101.149.44 icmp_seq=4 Destination Port Unreachable
+From 10.101.149.44 icmp_seq=5 Destination Port Unreachable
+^C
+--- 10.101.149.44 ping statistics ---
+5 packets transmitted, 0 received, +5 errors, 100% packet loss, time 4052ms
+
+fc51601@imagem-2223:~$ ping 10.101.149.44
+PING 10.101.149.44 (10.101.149.44) 56(84) bytes of data.
+^C
+--- 10.101.149.44 ping statistics ---
+22 packets transmitted, 0 received, 100% packet loss, time 21492ms
+#=====================================================================================#
+8.Não recebe informação de volta porque usou DROP. Devido ao DROP, houve 100% de packet loss enquanto no REJECT houve 5 erros.
+
+9.INPUT é para o tráfego que estamos a receber.
+OUPUT é para o tráfego que estamos a enviar.
+Não foram enviados pacotes da máquina A para a máquina B porque foi bloqueada a comunicação com o tráfego de A->B através do parâmetro OUTPUT.
+
+--icmp_type 8 para rejeitar o echo_request
+(iptables -A OUTPUT -d <destino> -p icmp --icmp-type 8 -j DROP)
+(exemplo: sudo iptables -A OUTPUT -s 10.101.149.45 -p icmp --icmp-type 8 -j DROP)
+
+iptables -F OUTPUT
+
+10.Comunicação bloqueada com as máquinas da mesma subrede.
+
+Review: Máscara de rede: Bits com valor 1 são identificadores da rede, bits com valor 0 são identificadores da máquina.
+exemplo: 255.255.252.0 => 8 + 8 + 6 bits para identificar a rede. Restantes 10 bits identificam a máquina.
+Ou seja, no ip 10.101.149.44 => 
+10.101.14x é o identificador da rede.
+9.44 é o identificador da máquina.
+
+sudo iptables -A OUTPUT -d 10.101.149.0/255.255.254.0 -p icmp --icmp-type 8 -j DROP
+--------------------------------------OU-------------------------------------------
+sudo iptables -A OUTPUT -d 10.101.149.0/23 -p icmp --icmp-type 8 -j DROP
+Sendo o 23 o número de bits identificadores da rede. 
+(Se metessemos 22 passava a ser considerado mais 1 bit para a máquina, fazendo com que
+máquinas no range de endereços 1.101.149.x ~ 1.101.151.x sejam unreachable)
+
+12.Permitir (apenas) ligações ssh (porto 22) novas à máquina gcc (10.101.151.5) mas dropa os restantes pacotes (ou seja, serviço ssh para a máquina GCC deixa de funcionar)
+
+13. Permite o estabelecimento de ligações ssh, desfazendo os efeitos da primeiro
+
+16.Limpar todas as regras INPUT
+
+
+
+
+
+
