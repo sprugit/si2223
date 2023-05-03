@@ -1,7 +1,7 @@
 package filetype;
 
 import abstracts.ConcreteClientFile;
-import keystore.ClientUser;
+import auth.ClientUser;
 
 public class ClientFileFactory {
 	

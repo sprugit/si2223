@@ -9,15 +9,16 @@ import java.net.Socket;
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocketFactory;
 
-import abstracts.ConcreteServerFile;
+import abstracts.ComplexServerFile;
+import auth.PasswordFile;
+import auth.ServerUser;
 import filetype.Assinado;
 import filetype.Cifrado;
 import filetype.Envelope;
 import filetype.UserFileFactory;
+import shared.FileDescriptor;
 import shared.Logger;
 import shared.User;
-import users.PasswordFile;
-import users.ServerUser;
 
 public class myCloudServer {
 
@@ -111,7 +112,8 @@ public class myCloudServer {
 						outStream.writeObject(true);
 						su.register(inStream);
 						Logger.log("User " + su.getUsername() + " was registered successfully!");
-
+						outStream.writeObject(true);
+						
 					} else {
 
 						UserFileFactory sfl = UserFileFactory.getInstance();
@@ -122,18 +124,19 @@ public class myCloudServer {
 							while (isReceiving) {
 
 								o = inStream.readObject();
-								if (o instanceof String) {
+								if (o instanceof FileDescriptor) {
 
-									String filename = (String) o;
-									fileExists = sfl.getExistingFile(filename) == null; // guarda se o ficheiro não
-																						// existe
+									FileDescriptor fd = (FileDescriptor) o;
+									fileExists = sfl.getExistingFile(fd.getFilename(),fd.getTarget()) != null; // guarda se o ficheiro não
+
 									outStream.writeObject((Boolean) fileExists);
 
-									if (fileExists) {
-										sfl.getServerFile(filename, op).receive(inStream);
+									if (!fileExists) {
+										sfl.getServerFile(fd.getFilename(), fd.getSender(), fd.getTarget(), op)
+										.receive(inStream, outStream);
 
 									} else {
-										Logger.log(filename + ": already exists! Skipping...");
+										Logger.log(fd.getFilename() + ": already exists! Skipping...");
 									}
 
 								} else if (o instanceof Boolean) {
@@ -146,10 +149,10 @@ public class myCloudServer {
 							while (isReceiving) {
 
 								o = inStream.readObject();
-								if (o instanceof String) {
+								if (o instanceof FileDescriptor) {
 
-									String filename = (String) o;
-									ConcreteServerFile toDownload = sfl.getExistingFile(filename);
+									FileDescriptor fd = (FileDescriptor) o;
+									ComplexServerFile toDownload = sfl.getExistingFile(fd.getFilename(),fd.getTarget());
 									Integer type = 0;
 									if (toDownload instanceof Cifrado) {
 										type = 1;
@@ -160,9 +163,9 @@ public class myCloudServer {
 									}
 									outStream.writeObject(type);
 									if (type == 0) {
-										Logger.log("User requested file: " + filename + " doesn't exist.");
+										Logger.log("User requested file: " + fd.getFilename() + " doesn't exist.");
 									} else {
-										toDownload.send(outStream);
+										toDownload.send(inStream, outStream);
 									}
 								} else if (o instanceof Boolean) {
 									isReceiving = false;
@@ -173,7 +176,6 @@ public class myCloudServer {
 					}
 
 				} catch (Exception e) {
-					e.printStackTrace();
 					Logger.error(e.getMessage());
 					outStream.writeObject(false);
 				}

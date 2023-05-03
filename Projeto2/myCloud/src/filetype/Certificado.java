@@ -1,21 +1,17 @@
 package filetype;
 
+import java.io.FileInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.security.cert.Certificate;
 
 import abstracts.ConcreteClientFile;
-import keystore.ClientUser;
 import shared.Logger;
 
 public class Certificado extends ConcreteClientFile {
 
-	public Certificado(String username) {
-		super(null, username+".cer");
+	public Certificado(String path) {
+		super(null, path);
 	}
 	
 	@Override
@@ -34,4 +30,6 @@ public class Certificado extends ConcreteClientFile {
 		Logger.log(filename+": uploaded successfully!");
 	}
 
+	
+	
 }

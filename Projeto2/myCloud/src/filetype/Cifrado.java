@@ -11,8 +11,8 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 
 import abstracts.ConcreteClientFile;
+import auth.ClientUser;
 import client.PathDefs;
-import keystore.ClientUser;
 import shared.Logger;
 
 public class Cifrado extends ConcreteClientFile {

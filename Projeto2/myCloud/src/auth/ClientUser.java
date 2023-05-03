@@ -1,4 +1,4 @@
-package keystore;
+package auth;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

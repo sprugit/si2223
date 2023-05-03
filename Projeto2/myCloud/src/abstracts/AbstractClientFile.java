@@ -13,7 +13,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import keystore.ClientUser;
+import auth.ClientUser;
 
 public abstract class AbstractClientFile{
 	

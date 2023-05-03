@@ -10,25 +10,29 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
+
+import auth.ClientUser;
 import filetype.Certificado;
 import filetype.ClientFileFactory;
-import keystore.ClientUser;
+import shared.FileDescriptor;
 import shared.Logger;
 import shared.User;
 
 public class myCloud extends Logger {
 
-	public static void main(String[] args) {
-
+	public static void main(String[] args) throws Exception {
+		
 		if(args.length == 0) {
 			exit("Not enough arguments were given.");
 		}
+		
+		PathDefs.initialize();
 
 		String address = null;
 		int port = 0;
 		String action = null;
 		String params = null;
-		String target;
+		String target = null;
 		User u = null;
 		try {
 			HashMap<String,String> argus = Arguments.parse(args);
@@ -67,6 +71,7 @@ public class myCloud extends Logger {
 					String[] user = params.split(" ");
 					u = new User(user[0], user[1]);
 					log("Attempting to register new user: " + user[0]);
+					params = user[2];
 				}
 			}
 		} catch (Exception e1) {
@@ -104,7 +109,11 @@ public class myCloud extends Logger {
 				if(!check) {
 					exit("User with username: " + u.getUsername() + " already exists!");
 				}
-				new Certificado(u.getUsername()).send(outStream);
+				new Certificado(params).send(outStream);
+				check = (boolean) inStream.readObject();
+				if(!check) {
+					exit("User with username: "+ u.getUsername() + " couldn't be registered! Invalid certificate sent.");
+				}
 				
 			} else {
 				
@@ -120,8 +129,9 @@ public class myCloud extends Logger {
 					
 					for (String filename : files) {
 						
-						if(Files.exists(Path.of(filename),LinkOption.NOFOLLOW_LINKS)) {
-							outStream.writeObject((String) filename);
+						try {
+							FileDescriptor fd = new FileDescriptor(filename, u.getUsername(), target);
+							outStream.writeObject(fd);
 							check = (boolean) inStream.readObject();
 
 							if (check) {
@@ -131,8 +141,8 @@ public class myCloud extends Logger {
 							} else {
 								log("File already exists on the server. Skipping...");
 							}
-						} else {
-							log("File :" + filename + "could not be found locally");
+						} catch (Exception e2) {
+							log(e2.getMessage());
 						}
 					}
 					// Informa o servidor que vamos parar de enviar ficheiros

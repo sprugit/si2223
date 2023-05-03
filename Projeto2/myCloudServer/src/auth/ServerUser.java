@@ -1,13 +1,11 @@
-package users;
+package auth;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
 
 import filetype.Certificado;
 import server.PathDefs;
@@ -15,6 +13,8 @@ import shared.User;
 
 public class ServerUser extends User {
 	
+	private static final long serialVersionUID = 1L;
+
 	protected ServerUser(String u, String p) {
 		super(u, p);
 	}
@@ -25,14 +25,13 @@ public class ServerUser extends User {
 	
 	public void register(ObjectInputStream ois) throws Exception {
 		//Store Cert
-		String filename = username+".cer";
-		new Certificado(filename).receive(ois);
+		new Certificado(username).receive(ois);
 		PasswordFile.getFile().newUser(this);
 		
 	}
 	
 	public boolean exists() throws Exception{
-		return PasswordFile.getFile().exists(this.username) && Files.exists(Path.of(PathDefs.cdir+username+".cer")); 
+		return PasswordFile.getFile().exists(username) && Files.exists(Path.of(PathDefs.cdir+username+".cer")); 
 	}
 	
 	public static void sendUserCert(String username, ObjectOutputStream oos) throws Exception {

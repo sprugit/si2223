@@ -1,43 +1,34 @@
 package filetype;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
-import abstracts.ConcreteServerFile;
+import abstracts.AbstractServerFile;
 import server.PathDefs;
 
-public class Certificado extends ConcreteServerFile{
+public class Certificado extends AbstractServerFile {
 
-	public Certificado(String filename) throws IOException {
-		super(filename);
+	public Certificado(String user) throws Exception {
+		super(PathDefs.cdir, user, ".cer");
 	}
 	
 	@Override
-	public boolean exists() {
-		return Files.exists(Path.of(PathDefs.cdir+filename));
-	}
-	
-	@Override
-	public void receive(ObjectInputStream ois) throws FileNotFoundException, IOException, ClassNotFoundException {
-		try(FileOutputStream fos = new FileOutputStream(PathDefs.cdir + filename);){
-			receiveBytes(ois, fos);
-		}
-	}
-	
-	@Override
-	public void send(ObjectOutputStream oos) throws FileNotFoundException, IOException, CertificateException {
-		try(FileInputStream fis = new FileInputStream(PathDefs.cdir + filename);){
+	public void receive(ObjectInputStream ois) throws Exception {
+		receiveBytes(ois);
+		boolean check = false;
+		try(FileInputStream fis = new FileInputStream(getPath());){
 			Certificate cf = CertificateFactory.getInstance("X.509").generateCertificate(fis);
-			oos.writeObject(cf);
+			String cuser = ((X509Certificate) cf).getIssuerX500Principal().getName().split(",")[0].substring(3);
+			check = !cuser.contentEquals(this.filename);
+		}
+		if(check) {
+			Files.delete(Path.of(getPath()));
+			throw new Exception("Invalid Certificate File received.");
 		}
 	}
 }

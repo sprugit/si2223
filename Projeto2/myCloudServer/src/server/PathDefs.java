@@ -1,6 +1,5 @@
 package server;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -22,12 +21,9 @@ public class PathDefs {
 	public static final String upath = base_dir + "users";
 	public static final String vpath = base_dir + "passwords.mac";
 	
-	//Array de paths para serem validadas
-	public static final String[] toValidate = {fdir,cdir};
-	
 	public static synchronized void initialize() throws Exception {
 		
-		for(String path : toValidate) {
+		for(String path : new String[]{fdir,cdir}) {
 			Path p = Path.of(path);
 			if(Files.notExists(p)) {
 				Logger.log("Directory '"+path+"' didn't exist. Creating...");

@@ -3,7 +3,7 @@ package abstracts;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import keystore.ClientUser;
+import auth.ClientUser;
 
 public class ConcreteClientFile extends AbstractClientFile {
 

@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.security.Signature;
 
 import abstracts.ConcreteClientFile;
-import keystore.ClientUser;
+import auth.ClientUser;
 import shared.Logger;
 
 public class Assinado extends ConcreteClientFile {

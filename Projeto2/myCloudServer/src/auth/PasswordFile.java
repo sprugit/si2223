@@ -1,4 +1,4 @@
-package users;
+package auth;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -130,15 +130,20 @@ public class PasswordFile extends Logger{
 		return seekUser(username) != null;
 	}
 	
-	public synchronized boolean login(String[] u) throws Exception {
+	public synchronized ServerUser login(User u) throws Exception {
 		
 		validate();
-		String[] u1 = seekUser(String.valueOf(u[0]));
+		String[] u1 = seekUser(String.valueOf(u.getUsername()));
 		if(u1!= null) {
 			
 			byte[] salt = Base64.getDecoder().decode(u1[2]);
-			return u1[1].contentEquals(genHashedPasswordWSalt(u[1], salt));
+			if(u1[1].contentEquals(genHashedPasswordWSalt(u.getPassword(), salt))) {
+				return new ServerUser(u.getUsername(),null);
+			} else {
+				throw new Exception("Invalid Credentials for user with username: "+u.getUsername());
+			}
+		} else {
+			throw new Exception("User with username "+u.getUsername()+" doesn't exist!");
 		}
-		return false; 
 	}	
 }
