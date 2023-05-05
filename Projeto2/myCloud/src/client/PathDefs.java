@@ -26,4 +26,8 @@ public class PathDefs {
 		
 	}
 	
+	public static void main(String[] args) throws Exception{
+		initialize();
+	}
+	
 }

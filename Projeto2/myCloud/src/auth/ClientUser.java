@@ -2,26 +2,21 @@ package auth;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.util.Scanner;
 
 import client.PathDefs;
-import shared.Logger;
 import shared.User;
 
 public class ClientUser extends User{
 
-	private ClientUser(String u, String p) {
+	public ClientUser(String u, String p) {
 		super(u, p);
 	}
 
@@ -30,11 +25,12 @@ public class ClientUser extends User{
 	
 	public void getKeystore() throws Exception {
 		kstore = KeyStore.getInstance("PKCS12");
-		try(FileInputStream kfile = new FileInputStream(this.getUsername()+".keystore");){
+		try(FileInputStream kfile = new FileInputStream(PathDefs.keystores+this.getUsername()+".keystore");){
 			kstore.load(kfile, this.getPassword().toCharArray());
 		} catch (FileNotFoundException e) {
 			throw new Exception("Keystore file doesn't exist!");
 		}
+		Files.createDirectories(Path.of(PathDefs.fdir+username));
 	}
 	
 	public PublicKey getPublicKey() throws Exception {
@@ -52,6 +48,10 @@ public class ClientUser extends User{
 	
 	public String getUserDir() {
 		return PathDefs.dir + this.getUsername() + "/";
+	}
+	
+	public User getUser() {
+		return new User(this.username,this.password);
 	}
 	
 	public static PublicKey getCertKey(String username, ObjectInputStream ois, ObjectOutputStream oos) throws Exception {

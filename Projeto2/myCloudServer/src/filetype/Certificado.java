@@ -18,7 +18,7 @@ public class Certificado extends AbstractServerFile {
 	}
 	
 	@Override
-	public void receive(ObjectInputStream ois) throws Exception {
+	public synchronized void receive(ObjectInputStream ois) throws Exception {
 		receiveBytes(ois);
 		boolean check = false;
 		try(FileInputStream fis = new FileInputStream(getPath());){

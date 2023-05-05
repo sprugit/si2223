@@ -27,10 +27,11 @@ public class ServerUser extends User {
 		//Store Cert
 		new Certificado(username).receive(ois);
 		PasswordFile.getFile().newUser(this);
+		Files.createDirectories(Path.of(PathDefs.fdir+username));
 		
 	}
 	
-	public boolean exists() throws Exception{
+	public static boolean exists(String username) throws Exception{
 		return PasswordFile.getFile().exists(username) && Files.exists(Path.of(PathDefs.cdir+username+".cer")); 
 	}
 	

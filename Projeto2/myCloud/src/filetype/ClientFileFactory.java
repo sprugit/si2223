@@ -11,21 +11,15 @@ public class ClientFileFactory {
 		this.u = user;
 	}
 	
-	public ConcreteClientFile getFile(String filename, String option) {
+	public ConcreteClientFile getFile(String filename, String target, String option) {
 		switch(option) {
 		case "-c":
-			return new Cifrado(this.u, filename);
+			return new Cifrado(this.u, filename, target);
 		case "-s":
-			return new Assinado(this.u, filename);
+			return new Assinado(this.u, filename, target);
 		case "-e":
-			return new Envelope(this.u, filename);
+			return new Envelope(this.u, filename, target);
 		}
 		return null;
-	}
-	
-	public static void main(String[] args) {
-		System.out.println(new ClientFileFactory(null).getFile("texto1.txt","-c"));
-		System.out.println(new ClientFileFactory(null).getFile("texto1.txt","-s"));
-		System.out.println(new ClientFileFactory(null).getFile("texto1.txt","-e"));
 	}
 }

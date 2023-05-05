@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.security.Key;
+import java.security.PublicKey;
 import java.security.Signature;
 
 import javax.crypto.Cipher;
@@ -18,16 +20,19 @@ import shared.Logger;
 
 public class Envelope extends ConcreteClientFile {
 
-	protected Envelope(ClientUser user, String filepath) {
-		super(user, filepath);
+	protected Envelope(ClientUser user, String filepath, String target) {
+		super(user, filepath, target);
 	}
 
 	@Override
-	public void send(ObjectOutputStream oos) throws Exception{
+	public synchronized void send(ObjectOutputStream oos) throws Exception{
 		
 		Logger.log(filename+": Attempting to upload secure envelope to server.");
 		SecretKey key = getKey(null);
-		oos.write(cipherKey(key.getEncoded() , Cipher.ENCRYPT_MODE));
+		oos.writeObject((int) 256);
+		Key k = user.getUsername().contentEquals(target) ? //Nesta invocação o certificado já existe porque foi carregado
+				user.getPublicKey() : new Certificado(target).load().getPublicKey(); //no loop exterior
+		oos.write(cipherKey(key.getEncoded() , Cipher.ENCRYPT_MODE, k));
 		Logger.log(filename+": Key successfully generated and uploaded!");
 
 		Cipher c = Cipher.getInstance("AES");
@@ -57,6 +62,7 @@ public class Envelope extends ConcreteClientFile {
 			Logger.log(filename+": Encrypted file successfully uploaded!");
 			
 			//Enviar para o servidor a assinatura
+			oos.writeObject((int) 256);
 			oos.write(s.sign());
 			Logger.log(filename+": Signature successfully generated and uploaded!");
 		}	
@@ -64,16 +70,28 @@ public class Envelope extends ConcreteClientFile {
 	}
 
 	@Override
-	public void receive(ObjectInputStream ois) throws Exception {
+	public synchronized void receive(ObjectInputStream ois, ObjectOutputStream oos) throws Exception {
+		
+		String uploader = (String) ois.readObject();
+		Certificado cert = new Certificado(uploader);
+		if(!cert.exists()) {
+			oos.writeObject(true);
+			cert.receive(ois);
+		} else {
+			oos.writeObject(false);
+		}
 		
 		Logger.log(filename+": Attempting to download secure envelope from server.");
+		ois.readObject();
 		SecretKey key = getKey(cipherKey(ois.readNBytes(256), Cipher.DECRYPT_MODE));
 		Logger.log(filename+": Key successfully received!");
 		Cipher c = Cipher.getInstance("AES");
 		c.init(Cipher.DECRYPT_MODE, key);
 		
 		Signature s = Signature.getInstance("SHA256withRSA");
-        s.initVerify(this.user.getPublicKey());
+		Key k = uploader.contentEquals(user.getUsername()) ?
+				this.user.getPublicKey() : new Certificado(uploader).load().getPublicKey();
+		s.initVerify((PublicKey) k);
         
         int fsize = (Integer) ois.readObject();
         
@@ -101,6 +119,7 @@ public class Envelope extends ConcreteClientFile {
         	Logger.log(filename+": Encrypted file successfully downloaded and decrypted!");
         }
         
+        ois.readObject();
         byte[] sig = ois.readNBytes(256);
 		String message = "Expected signature doesn't match received signature.";
 		if(s.verify(sig)) {

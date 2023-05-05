@@ -27,22 +27,23 @@ public abstract class AbstractServerFile {
 		return Files.exists(Path.of(getPath()));
 	}
 	
-	protected void receiveBytes(ObjectInputStream ois) throws Exception  {
+	protected synchronized void receiveBytes(ObjectInputStream ois) throws Exception  {
 		int fsize = (Integer) ois.readObject();
 		try(FileOutputStream fos = new FileOutputStream(getPath())) {
-			long read = 0;
+			int read = 0;
 			long total = 0;
 			byte[] buf = new byte[512];
 			do {
-				int toBeRead = (int) (fsize - total > buf.length ? buf.length : fsize - total) ;
-				read = ois.read(buf, 0, toBeRead);
-				total += read;
-				fos.write(buf, 0 , (int) read);
+				if((read = ois.read(buf, 0, buf.length)) > -1) {
+					total += read;
+					fos.write(buf, 0 , read);
+					fos.flush();
+				}
 			}while(total < fsize);
 		}
 	}
 	
-	protected void sendBytes(ObjectOutputStream oos) throws Exception {
+	protected synchronized void sendBytes(ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(getPath())) {
 			oos.writeObject((int) Files.size(Path.of(getPath())));
 			long read = 0;
@@ -54,11 +55,11 @@ public abstract class AbstractServerFile {
 		}
 	}
 	
-	public void receive(ObjectInputStream ois) throws Exception {
+	public synchronized void receive(ObjectInputStream ois) throws Exception {
 		receiveBytes(ois);
 	}
 	
-	public void send(ObjectOutputStream oos) throws Exception {
+	public synchronized void send(ObjectOutputStream oos) throws Exception {
 		sendBytes(oos);
 	};
 	

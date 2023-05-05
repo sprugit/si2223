@@ -27,6 +27,10 @@ public abstract class AbstractClientFile{
 		this.user = user;
 	}
 	
+	public boolean exists() {
+		return Files.exists(Path.of(this.filepath));
+	}
+	
 	protected long lencrypted() throws Exception {
 		long size = Files.size(Path.of(filepath));
 		if(size % 16 == 0) {
@@ -80,5 +84,11 @@ public abstract class AbstractClientFile{
 	public abstract void send(ObjectOutputStream oos) throws Exception;
 	
 	public abstract void receive(ObjectInputStream ois) throws Exception;
+
+	public void receive(ObjectInputStream ois, ObjectOutputStream oos) throws Exception {
+	}
+
+	public void send(ObjectInputStream ois, ObjectOutputStream oos) throws Exception {
+	}
 
 }

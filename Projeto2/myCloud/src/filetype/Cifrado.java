@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.security.Key;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -17,16 +18,19 @@ import shared.Logger;
 
 public class Cifrado extends ConcreteClientFile {
 
-	protected Cifrado(ClientUser user, String filepath) {
-		super(user, filepath);
+	protected Cifrado(ClientUser user, String filepath, String target) {
+		super(user, filepath, target);
 	}
 
 	@Override
-	public void send(ObjectOutputStream oos) throws Exception {
+	public synchronized void send(ObjectOutputStream oos) throws Exception {
 		
 		Logger.log(filename+": Attempting to upload encrypted file to server.");
 		SecretKey key = getKey(null);
-		oos.write(cipherKey(key.getEncoded() , Cipher.ENCRYPT_MODE));
+		oos.writeObject((Integer) 256);
+		Key k = user.getUsername().contentEquals(target) ? //Nesta invocação o certificado já existe porque foi carregado
+				user.getPublicKey() : new Certificado(target).load().getPublicKey(); //no loop exterior
+		oos.write(cipherKey(key.getEncoded() , Cipher.ENCRYPT_MODE, k));
 		Logger.log(filename+": Key successfully generated and uploaded!");
 		
 		Cipher c = Cipher.getInstance("AES");
@@ -42,16 +46,17 @@ public class Cifrado extends ConcreteClientFile {
 			byte[] buf = new byte[512];
 			while ((read = cis.read(buf, 0, buf.length)) > -1) {
 				oos.write(buf, 0, (int) read);
-				oos.flush();
 			}
+			oos.flush();
 		}
 		Logger.log(filename+": Encrypted file successfully uploaded!");
 	}
 
 	@Override
-	public void receive(ObjectInputStream ois) throws Exception{
-		
+	public synchronized void receive(ObjectInputStream ois, ObjectOutputStream oos) throws Exception{
+	
 		Logger.log(filename+": Attempting to download encrypted file from server.");
+		ois.readObject();
 		SecretKey key = getKey(cipherKey(ois.readNBytes(256), Cipher.DECRYPT_MODE));
 		Logger.log(filename+": Key successfully received!");
 		Cipher c = Cipher.getInstance("AES");

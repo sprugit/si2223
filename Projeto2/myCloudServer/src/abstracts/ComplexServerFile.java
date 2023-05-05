@@ -28,30 +28,33 @@ public class ComplexServerFile {
 		return true;
 	}
 	
-	public void receive(ObjectInputStream ois, ObjectOutputStream oos) throws Exception {
+	public synchronized void receive(ObjectInputStream ois/*, ObjectOutputStream oos*/) throws Exception {
 		
+		/* Este excerto de código faria sentido se desse para fazer upload para utilizadores diferentes
 		boolean c = (boolean) ois.readObject(); //Esperar que o utilizador diga se precisa do cert ou não
 		if(c) {
 			Logger.log("Client requested certificate for user "+uploader+".");
 			new Certificado(uploader).send(oos);
-		}
+		}*/
 		
 		ConcreteServerFile csf; 
 		for(int type : getTypes()) { //Receber pela ordem especificada nas subclasses os ficheiros necessários
 			csf = new ConcreteServerFile(filename, uploader, receiver, ConcreteServerFile.mtypes[type]);
-			Logger.log(csf.filename+": uploading...");
+			Logger.log(csf.filename+csf.ext+": receiving...");
 			csf.receive(ois);
-			Logger.log(csf.filename+": uploaded successfully!");
+			Logger.log(csf.filename+csf.ext+": uploaded successfully!");
 		}
 	}
 	
-	public void send(ObjectInputStream ois, ObjectOutputStream oos) throws Exception {
+	public synchronized void send(ObjectInputStream ois, ObjectOutputStream oos) throws Exception {
 		
 		oos.writeObject(uploader); //Perguntar ao utilizador se precisa do certificado especificado
 		boolean c = (boolean) ois.readObject();
 		if(c) {
 			Logger.log("Client requested certificate for user "+uploader+".");
 			new Certificado(uploader).send(oos);
+		} else {
+			Logger.log("Client already has certificate for user "+uploader+".");
 		}
 		ConcreteServerFile csf;
 		for(int type : getTypes()) { //Enviar pela ordem especificada nas subclasses os ficheiros necessários

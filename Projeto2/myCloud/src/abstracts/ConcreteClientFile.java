@@ -7,14 +7,17 @@ import auth.ClientUser;
 
 public class ConcreteClientFile extends AbstractClientFile {
 
-	public ConcreteClientFile(ClientUser user, String filepath) {
+	protected final String target;
+	
+	public ConcreteClientFile(ClientUser user, String filepath, String target) {
 		super(user, filepath);
+		this.target = target;
 	}
 
 	@Override
-	public void send(ObjectOutputStream oos) throws Exception {}
+	public synchronized void send(ObjectOutputStream oos) throws Exception {}
 
 	@Override
-	public void receive(ObjectInputStream ois) throws Exception {}
+	public synchronized void receive(ObjectInputStream ois) throws Exception {}
 
 }

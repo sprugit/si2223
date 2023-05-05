@@ -8,13 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.HashMap;
+
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
 import auth.ClientUser;
 import filetype.Certificado;
 import filetype.ClientFileFactory;
-import shared.FileDescriptor;
 import shared.Logger;
 import shared.User;
 
@@ -33,7 +33,7 @@ public class myCloud extends Logger {
 		String action = null;
 		String params = null;
 		String target = null;
-		User u = null;
+		ClientUser u = null;
 		try {
 			HashMap<String,String> argus = Arguments.parse(args);
 			System.out.println(argus);
@@ -65,11 +65,11 @@ public class myCloud extends Logger {
 					if(!argus.containsKey("-u") || !argus.containsKey("-p")) {
 						throw new Exception("No user was given: missing username or password!");
 					}
-					u = new User(argus.get("-u"), argus.get("-p"));
+					u = new ClientUser(argus.get("-u"), argus.get("-p"));
 					log("Attempting to upload files: " +  params);
 				} else {
 					String[] user = params.split(" ");
-					u = new User(user[0], user[1]);
+					u = new ClientUser(user[0], user[1]);
 					log("Attempting to register new user: " + user[0]);
 					params = user[2];
 				}
@@ -102,13 +102,15 @@ public class myCloud extends Logger {
 				exit("Operation Rejected by Server");
 			}
 			
-			outStream.writeObject((User) u);
+			outStream.writeObject((User) u.getUser());
 			check = (boolean) inStream.readObject();
 			if("-au".contentEquals(action)) {
 				log("Attempting to register user with username: " + u.getUsername());
 				if(!check) {
 					exit("User with username: " + u.getUsername() + " already exists!");
 				}
+				System.out.println(params);
+				System.out.println(params.matches("[\\/\\w*]*\\/\\w+.cer"));
 				new Certificado(params).send(outStream);
 				check = (boolean) inStream.readObject();
 				if(!check) {
@@ -121,36 +123,59 @@ public class myCloud extends Logger {
 					exit("User with username: " + u.getUsername() + " doesn't exist!");
 				}
 				String[] files = params.split(" ");
-				ClientUser u1 = (ClientUser) u;
 				
-				ClientFileFactory cfl = new ClientFileFactory(u1);
+				ClientFileFactory cfl = new ClientFileFactory(u);
+				u.getKeystore();//Since user exists, load keystore
 				
 				if("-c-s-e".contains(action)) {
 					
-					for (String filename : files) {
+					outStream.writeObject(target);
+					check = (boolean) inStream.readObject();
+					if(check) {
 						
-						try {
-							FileDescriptor fd = new FileDescriptor(filename, u.getUsername(), target);
-							outStream.writeObject(fd);
-							check = (boolean) inStream.readObject();
-
-							if (check) {
-								
-								cfl.getFile(filename, action).send(outStream);
-							
-							} else {
-								log("File already exists on the server. Skipping...");
-							}
-						} catch (Exception e2) {
-							log(e2.getMessage());
+						Certificado c = new Certificado(target);
+						if(!c.exists()) {
+							outStream.writeObject(true);
+							log("Certificate for requested user not found. Downloading...");
+							c.receive(inStream);
+							log("Certificate download complete!");
+						} else {
+							outStream.writeObject(false);
+							log("Certificate for requested user found locally!");
 						}
+						
+						for (String filename : files) {
+							
+							if(Files.exists(Path.of(filename))) {
+
+								try {
+									log("Uploading "+filename+" to "+target+"'s repository!");
+									outStream.writeObject((String) filename);
+									check = (boolean) inStream.readObject();
+
+									if (check) {
+										log("File doesn't exist on the server. Uploading...");
+										cfl.getFile(filename, target, action).send(outStream);
+									
+									} else {
+										log("File already exists on the server. Skipping...");
+									}
+								} catch (Exception e2) {
+									e2.printStackTrace();
+									log(e2.getMessage());
+								}	
+							} else {
+								log("File doesn't exist locally. Skipping...");
+							}
+						}
+					} else {
+						throw new Exception("User to receive files doesn't exist!");
 					}
-					// Informa o servidor que vamos parar de enviar ficheiros
 					outStream.writeObject(false);
 				} else {
 					for (String filename : files) {
 						
-						if(Files.exists(Path.of(u1.getUserDir() + filename),LinkOption.NOFOLLOW_LINKS)) {
+						if(Files.exists(Path.of(u.getUserDir() + filename),LinkOption.NOFOLLOW_LINKS)) {
 							log("File already exists locally. Skipping...");
 						} else {
 							outStream.writeObject((String) filename);
@@ -177,7 +202,7 @@ public class myCloud extends Logger {
 									break;
 								}
 							}
-							cfl.getFile(filename, option).receive(inStream);
+							cfl.getFile(filename, null, option).receive(inStream,outStream);
 						}
 					}
 					outStream.writeObject((boolean) false);

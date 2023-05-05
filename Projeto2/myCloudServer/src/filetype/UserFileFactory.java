@@ -38,12 +38,12 @@ public class UserFileFactory {
 			
 			@Override
 			public boolean accept(File arg0, String arg1) {
-				return arg1.matches("^"+filename+".\\w.\\w");
+				return arg1.matches(filename+".\\w+.[\\w\\s]+");
 			}
 		}));
 		ComplexServerFile c = null;
 		for(String name : match) {
-			String[] parts = name.split(".");
+			String[] parts = name.split("\\.");
 			String uploader = parts[parts.length-3];
 			switch(parts[parts.length-2]) {
 			case "cifrado":

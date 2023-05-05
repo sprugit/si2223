@@ -3,6 +3,7 @@ package server;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OptionalDataException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -13,10 +14,10 @@ import abstracts.ComplexServerFile;
 import auth.PasswordFile;
 import auth.ServerUser;
 import filetype.Assinado;
+import filetype.Certificado;
 import filetype.Cifrado;
 import filetype.Envelope;
 import filetype.UserFileFactory;
-import shared.FileDescriptor;
 import shared.Logger;
 import shared.User;
 
@@ -106,7 +107,7 @@ public class myCloudServer {
 					if (op.contentEquals("-au")) {
 
 						Logger.log("Client is attempting to register a new user: " + su.getUsername());
-						if (su.exists()) {
+						if (ServerUser.exists(su.getUsername())) {
 							throw new Exception("User " + su.getUsername() + " already exists!");
 						}
 						outStream.writeObject(true);
@@ -115,67 +116,99 @@ public class myCloudServer {
 						outStream.writeObject(true);
 						
 					} else {
-
-						UserFileFactory sfl = UserFileFactory.getInstance();
-
-						boolean isReceiving = true;
-						boolean fileExists = false;
-						if ("-c-s-e".contains(op)) {
-							while (isReceiving) {
-
-								o = inStream.readObject();
-								if (o instanceof FileDescriptor) {
-
-									FileDescriptor fd = (FileDescriptor) o;
-									fileExists = sfl.getExistingFile(fd.getFilename(),fd.getTarget()) != null; // guarda se o ficheiro não
-
-									outStream.writeObject((Boolean) fileExists);
-
-									if (!fileExists) {
-										sfl.getServerFile(fd.getFilename(), fd.getSender(), fd.getTarget(), op)
-										.receive(inStream, outStream);
-
-									} else {
-										Logger.log(fd.getFilename() + ": already exists! Skipping...");
+						
+						if(ServerUser.exists(su.getUsername())) {
+							
+							Logger.log("User "+su.getUsername()+" connected.");
+							outStream.writeObject(true); //Inform client user exists and is valid
+							
+							UserFileFactory sfl = UserFileFactory.getInstance();
+							
+							boolean check = false;
+							boolean isReceiving = true;
+							boolean fileExists = false;
+							if ("-c-s-e".contains(op)) {
+								
+								String target = (String) inStream.readObject(); //Se o utilizador para onde guardamos os ficheiros existe
+								if(ServerUser.exists(target)) {
+									
+									outStream.writeObject(true);
+									check = (boolean) inStream.readObject();
+									if(check) {
+										Logger.log("Client requested certificate file for user "+target);
+										Certificado c = new Certificado(target);
+										c.send(outStream);
+										Logger.log("Certificate for user "+ target +" sent to user!");
 									}
+									
+									while (isReceiving) {
 
-								} else if (o instanceof Boolean) {
-									isReceiving = false;
+										o = inStream.readObject();
+										if (o instanceof String) {
+
+											String filename = (String) o;
+											Logger.log("File: "+filename);
+											fileExists = sfl.getExistingFile(filename,target) != null; // guarda se o ficheiro não
+											
+											Logger.log((fileExists ? "File "+filename+" exists!" : "File "+filename+" doesn't exist!"));
+											outStream.writeObject((Boolean) !fileExists);
+
+											if (!fileExists) {
+												sfl.getServerFile(filename, su.getUsername(), target, op)
+												.receive(inStream);
+
+											} else {
+												Logger.log(filename + ": already exists! Skipping...");
+											}
+
+										} else if (o instanceof Boolean) {
+											isReceiving = false;
+										}
+									}
+									
+								} else {
+									throw new Exception("User "+target+" doesn't exist!");
+								}
+							} else {
+								Logger.log("User is attempting to download files");
+
+								while (isReceiving) {
+
+									o = inStream.readObject();
+									if (o instanceof String) {
+
+										String filename = (String) o;
+										ComplexServerFile toDownload = sfl.getExistingFile(filename,su.getUsername());
+										Integer type = 0;
+										if (toDownload instanceof Cifrado) {
+											type = 1;
+										} else if (toDownload instanceof Assinado) {
+											type = 2;
+										} else if (toDownload instanceof Envelope) {
+											type = 3;
+										}
+										outStream.writeObject(type);
+										if (type == 0) {
+											Logger.log("User requested file: " + filename + " doesn't exist.");
+										} else {
+											toDownload.send(inStream, outStream);
+										}
+									} else if (o instanceof Boolean) {
+										isReceiving = false;
+									}
 								}
 							}
+							Logger.log("File transfers complete. User disconnected.");
 						} else {
-							Logger.log("User is attempting to download files");
-
-							while (isReceiving) {
-
-								o = inStream.readObject();
-								if (o instanceof FileDescriptor) {
-
-									FileDescriptor fd = (FileDescriptor) o;
-									ComplexServerFile toDownload = sfl.getExistingFile(fd.getFilename(),fd.getTarget());
-									Integer type = 0;
-									if (toDownload instanceof Cifrado) {
-										type = 1;
-									} else if (toDownload instanceof Assinado) {
-										type = 2;
-									} else if (toDownload instanceof Envelope) {
-										type = 3;
-									}
-									outStream.writeObject(type);
-									if (type == 0) {
-										Logger.log("User requested file: " + fd.getFilename() + " doesn't exist.");
-									} else {
-										toDownload.send(inStream, outStream);
-									}
-								} else if (o instanceof Boolean) {
-									isReceiving = false;
-								}
-							}
+							throw new Exception("User "+ su.getUsername() + " doesn't exist!");
 						}
-						Logger.log("File transfers complete. User disconnected.");
 					}
-
-				} catch (Exception e) {
+				} catch (OptionalDataException e3) {
+					e3.printStackTrace();
+					System.out.println("OptionalDataException len"+String.valueOf(e3.length));
+					
+				}catch (Exception e) {
+					e.printStackTrace();
 					Logger.error(e.getMessage());
 					outStream.writeObject(false);
 				}
