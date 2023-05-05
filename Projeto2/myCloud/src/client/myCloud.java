@@ -3,6 +3,7 @@ package client;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OptionalDataException;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -36,7 +37,6 @@ public class myCloud extends Logger {
 		ClientUser u = null;
 		try {
 			HashMap<String,String> argus = Arguments.parse(args);
-			System.out.println(argus);
 			if(argus.containsKey("-a")) {
 				String[] remote = argus.get("-a").split(":");
 				address = remote[0];
@@ -176,28 +176,28 @@ public class myCloud extends Logger {
 					for (String filename : files) {
 						
 						if(Files.exists(Path.of(u.getUserDir() + filename),LinkOption.NOFOLLOW_LINKS)) {
-							log("File already exists locally. Skipping...");
+							log(filename+": File already exists locally. Skipping...");
 						} else {
 							outStream.writeObject((String) filename);
 							int type = (int) inStream.readObject();
 							String option = null;
 							switch(type) {
 								case 0:{
-									log("File doesn't exist on remote cloud. Skipping...");
+									log(filename+": File doesn't exist on remote cloud. Skipping...");
 									continue;
 								}
 								case 1:{
-									log("Found encrypted file on remote cloud. Downloading...");
+									log(filename+": Found encrypted file on remote cloud. Downloading...");
 									option = "-c";
 									break;
 								}
 								case 2:{
-									log("Found signature file on remote cloud. Verifying...");
+									log(filename+": Found signature file on remote cloud. Verifying...");
 									option = "-s";
 									break;
 								}
 								case 3:{
-									log("Found envelope file on remote cloud. Downloading and Verifying...");
+									log(filename+": Found envelope file on remote cloud. Downloading and Verifying...");
 									option = "-e";
 									break;
 								}
@@ -208,6 +208,9 @@ public class myCloud extends Logger {
 					outStream.writeObject((boolean) false);
 				}
 			}
+		} catch (OptionalDataException e) {
+			System.out.println(e.length);
+			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 			exit("IOException: connection with remote host was either forcebly closed or timed out.");

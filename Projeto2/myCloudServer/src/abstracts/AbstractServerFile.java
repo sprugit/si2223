@@ -45,7 +45,7 @@ public abstract class AbstractServerFile {
 	
 	protected synchronized void sendBytes(ObjectOutputStream oos) throws Exception {
 		try(FileInputStream fis = new FileInputStream(getPath())) {
-			oos.writeObject((int) Files.size(Path.of(getPath())));
+			oos.writeObject((Integer) (int)Files.size(Path.of(getPath())));
 			long read = 0;
 			byte[] buf = new byte[512];
 			while((read = fis.read(buf, 0, buf.length)) > 0){

@@ -52,23 +52,22 @@ public class Assinado extends ConcreteClientFile {
 		String uploader = (String) ois.readObject();
 		Certificado c = new Certificado(uploader);
 		if(!c.exists()) {
+			Logger.log("Certificate for user "+uploader+" wasn't found locally. Downloading...");
 			oos.writeObject(true);
 			c.receive(ois);
+			Logger.log("Certificate for user "+uploader+" was downloaded successfully.");
 		} else {
 			oos.writeObject(false);
+			Logger.log("Certificate for user "+uploader+" was found.");
 		}
 		
-		Logger.log(filename+": Attempting to download signature file from server.");
-		ois.readObject();
-		byte[] signature = ois.readNBytes(256); // read key bytes
 		Signature s = Signature.getInstance("SHA256withRSA");
-		Logger.log(filename+": Signature successfully downloaded!");
 		Key k = uploader.contentEquals(user.getUsername()) ?
 				this.user.getPublicKey() : new Certificado(uploader).load().getPublicKey();
 		s.initVerify((PublicKey) k);
 		
 		long read, total = 0;
-		int fsize = (Integer) ois.readObject();
+		int fsize = (int) ois.readObject();
 		byte[] buf = new byte[512];
 		do {
 			read = ois.read(buf, 0, (int) buf.length);
@@ -76,10 +75,16 @@ public class Assinado extends ConcreteClientFile {
 			s.update(buf, 0, (int) read);
 		} while(total < fsize);
 		Logger.log(filename+": Verification file successfully downloaded!");
+		
+		Logger.log(filename+": Attempting to download signature file from server.");
+		ois.readObject();
+		byte[] signature = ois.readNBytes(256); // read key bytes
 
-		String message = "Expected signature doesn't match received signature.";
+		Logger.log(filename+": Signature successfully downloaded!");
+
+		String message = "Expected signature doesn't match received signature. File wasn't uploaded by "+uploader+".";
 		if(s.verify(signature)) {
-			message = "Expected signature matches received signature.";
+			message = "Expected signature matches received signature.File was uploaded by "+uploader+".";
 		}
 		Logger.log(filename+": "+message);	
 	}

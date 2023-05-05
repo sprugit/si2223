@@ -59,9 +59,9 @@ public class ComplexServerFile {
 		ConcreteServerFile csf;
 		for(int type : getTypes()) { //Enviar pela ordem especificada nas subclasses os ficheiros necessários
 			csf = new ConcreteServerFile(filename, uploader, receiver, ConcreteServerFile.mtypes[type]);
-			Logger.log(csf.filename+": sending file to user...");
+			Logger.log(csf.filename+csf.ext+": sending file to user...");
 			csf.send(oos);
-			Logger.log(csf.filename+": sent to user successfully!");			
+			Logger.log(csf.filename+csf.ext+": sent to user successfully!");			
 		}
 	}
 	

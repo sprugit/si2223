@@ -54,6 +54,9 @@ public class Cifrado extends ConcreteClientFile {
 
 	@Override
 	public synchronized void receive(ObjectInputStream ois, ObjectOutputStream oos) throws Exception{
+		
+		ois.readObject(); //Ignore Original File owner
+		oos.writeObject(false); //Ignore certificate request
 	
 		Logger.log(filename+": Attempting to download encrypted file from server.");
 		ois.readObject();
@@ -64,15 +67,15 @@ public class Cifrado extends ConcreteClientFile {
 
 		int fsize = (Integer) ois.readObject();
 		
-		try (FileOutputStream fos = new FileOutputStream(PathDefs.dir + user.getUsername() + "/" + this.filepath);
+		try (FileOutputStream fos = new FileOutputStream(PathDefs.fdir + user.getUsername() + "/" + this.filepath);
 			CipherOutputStream cos = new CipherOutputStream(fos, c)) {
 			long read, total = 0;
 			byte[] buf = new byte[512];
 			do {
-				int toBeRead = (int) (fsize - total > buf.length ? buf.length : fsize - total) ;
-				read = ois.read(buf, 0, toBeRead);
-				cos.write(buf, 0, (int) read);
-				total += read;
+				if((read = ois.read(buf, 0, buf.length)) > -1) {
+					cos.write(buf, 0, (int) read);
+					total += read;
+				}
 			}while(total < fsize);
 		}
 		Logger.log(filename+": Encrypted file successfully downloaded and decrypted!");

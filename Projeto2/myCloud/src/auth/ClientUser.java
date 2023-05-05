@@ -47,7 +47,7 @@ public class ClientUser extends User{
 	}
 	
 	public String getUserDir() {
-		return PathDefs.dir + this.getUsername() + "/";
+		return PathDefs.fdir + this.getUsername() + "/";
 	}
 	
 	public User getUser() {

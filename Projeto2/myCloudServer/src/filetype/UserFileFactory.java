@@ -44,7 +44,7 @@ public class UserFileFactory {
 		ComplexServerFile c = null;
 		for(String name : match) {
 			String[] parts = name.split("\\.");
-			String uploader = parts[parts.length-3];
+			String uploader = parts[parts.length-1];
 			switch(parts[parts.length-2]) {
 			case "cifrado":
 				c = new Cifrado(filename, uploader, receiver);

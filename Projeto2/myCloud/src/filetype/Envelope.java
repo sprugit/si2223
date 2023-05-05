@@ -75,10 +75,13 @@ public class Envelope extends ConcreteClientFile {
 		String uploader = (String) ois.readObject();
 		Certificado cert = new Certificado(uploader);
 		if(!cert.exists()) {
+			Logger.log("Certificate for user "+uploader+" wasn't found locally. Downloading...");
 			oos.writeObject(true);
 			cert.receive(ois);
+			Logger.log("Certificate for user "+uploader+" was downloaded successfully.");
 		} else {
 			oos.writeObject(false);
+			Logger.log("Certificate for user "+uploader+" was found.");
 		}
 		
 		Logger.log(filename+": Attempting to download secure envelope from server.");
@@ -95,7 +98,7 @@ public class Envelope extends ConcreteClientFile {
         
         int fsize = (Integer) ois.readObject();
         
-        try(FileOutputStream fos = new FileOutputStream(PathDefs.dir + user.getUsername() + "/" + this.filepath);
+        try(FileOutputStream fos = new FileOutputStream(PathDefs.fdir + user.getUsername() + "/" + this.filepath);
         	ByteArrayOutputStream baos = new ByteArrayOutputStream();){
         	
         	byte[] temp, buf = new byte[512];
@@ -121,9 +124,9 @@ public class Envelope extends ConcreteClientFile {
         
         ois.readObject();
         byte[] sig = ois.readNBytes(256);
-		String message = "Expected signature doesn't match received signature.";
+		String message = "Expected signature doesn't match received signature. File wasn't uploaded by "+uploader+".";
 		if(s.verify(sig)) {
-			message = "Expected signature matches received signature.";
+			message = "Expected signature matches received signature.File was uploaded by "+uploader+".";
 		}
 		Logger.log(filename+": "+message);	
 	}
